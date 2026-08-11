@@ -2,85 +2,14 @@
 const registeredContainers = new Set();
 let currentLang = localStorage.getItem('presentit_lang') || 'en';
 
-// Inline synchronous fallback dictionary to prevent blank keys before fetch completes
-let TRANSLATIONS = {
-  en: {
-    app_title: "PresentIt",
-    tagline: "Where presentations get wild",
-    host_game: "Host a Game",
-    join_game: "Join a Game",
-    room_code: "Room Code",
-    enter_code: "Enter 4-letter code",
-    enter_name: "Enter your name",
-    join_button: "Join Game",
-    admin_title: "Admin (Template Builder)",
-    select_presenter: "👑 Make Presenter",
-    start_game: "Start Game",
-    play_again: "🔄 Play Again (Same Room & Players)",
-    change_presentation: "📑 Change Presentation",
-    back: "Back",
-    create_template: "+ Create Template"
-  },
-  de: {
-    app_title: "PresentIt",
-    tagline: "Wo Präsentationen verrückt werden",
-    host_game: "Spiel Hosten",
-    join_game: "Spiel Beitreten",
-    room_code: "Raumcode",
-    enter_code: "4-stelligen Code eingeben",
-    enter_name: "Gib deinen Namen ein",
-    join_button: "Spiel Beitreten",
-    admin_title: "Admin (Vorlagen-Editor)",
-    select_presenter: "👑 Als Präsentator wählen",
-    start_game: "Spiel Starten",
-    play_again: "🔄 Noch einmal spielen (Gleicher Raum)",
-    change_presentation: "📑 Präsentation wechseln",
-    back: "Zurück",
-    create_template: "+ Vorlage erstellen"
-  },
-  fr: {
-    app_title: "PresentIt",
-    tagline: "Quand les présentations deviennent folles",
-    host_game: "Héberger une partie",
-    join_game: "Rejoindre une partie",
-    room_code: "Code de salle",
-    enter_code: "Entrez le code à 4 lettres",
-    enter_name: "Entrez votre nom",
-    join_button: "Rejoindre le jeu",
-    admin_title: "Admin (Créateur de modèles)",
-    select_presenter: "👑 Désigner présentateur",
-    start_game: "Commencer le jeu",
-    play_again: "🔄 Rejouer (Même salle)",
-    change_presentation: "📑 Changer de présentation",
-    back: "Retour",
-    create_template: "+ Créer un modèle"
-  },
-  zh: {
-    app_title: "PresentIt",
-    tagline: "让演示变得狂野搞笑",
-    host_game: "主持游戏",
-    join_game: "加入游戏",
-    room_code: "房间代码",
-    enter_code: "输入4位房间代码",
-    enter_name: "输入你的名字",
-    join_button: "加入游戏",
-    admin_title: "管理员（模板生成器）",
-    select_presenter: "👑 设为演示者",
-    start_game: "开始游戏",
-    play_again: "🔄 再玩一次（相同房间）",
-    change_presentation: "📑 更换演示模板",
-    back: "返回",
-    create_template: "+ 创建模板"
-  }
-};
+let TRANSLATIONS = {};
 
 // Load full i18n.json dynamically
 async function loadTranslations() {
   try {
     const res = await fetch('/i18n.json');
     if (res.ok) {
-      const data = await res.json();
-      TRANSLATIONS = data;
+      TRANSLATIONS = await res.json();
       updatePageTranslations();
     }
   } catch (err) {
