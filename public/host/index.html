@@ -629,9 +629,8 @@
               <div class="rating-chips" id="ratingChips"></div>
             </div>
             <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-              <button class="btn btn-ghost" onclick="location.reload()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                Play Again
+              <button class="btn btn-hot btn-lg" id="btnRestartGame">
+                🔄 Play Again (Same Room & Players)
               </button>
               <a class="btn btn-primary" href="/">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
@@ -720,6 +719,16 @@
       showFinalResults(data);
     });
 
+    socket.on('game:reset', () => {
+      document.getElementById('presenterView').style.display = 'none';
+      showLobby();
+      toast('Game restarted! Ready for next round.', 'info');
+    });
+
+    document.getElementById('btnRestartGame').addEventListener('click', () => {
+      socket.emit('host:restart_game');
+    });
+
     // ── Helpers: view switching ────────────────────────────────────────
     function setView(v) {
       document.querySelectorAll('[data-state]').forEach(el => el.classList.remove('active'));
@@ -796,18 +805,24 @@
         div.className = 'player-item';
         div.style.animationDelay = `${i * 40}ms`;
         const col = avatarColor(p.name || '?');
-        const roleCls = p.role === 'presenter' ? 'role-presenter' : 'role-audience';
-        const roleLabel = p.role === 'presenter' ? 'Presenter' : 'Audience';
+        const isPresenter = (p.role === 'presenter');
+        const roleCls = isPresenter ? 'role-presenter' : 'role-audience';
+        const roleLabel = isPresenter ? '🎤 Presenter' : 'Audience';
         div.innerHTML = `
           <div class="player-avatar" style="background:${col}">${initials(p.name || '?')}</div>
           <div class="player-name">${escHtml(p.name)}</div>
           <div class="player-role-badge ${roleCls}">${roleLabel}</div>
+          ${!isPresenter ? `<button class="btn btn-ghost btn-sm" style="margin-left:auto;font-size:12px;" onclick="selectPresenter('${p.id}')">👑 Make Presenter</button>` : ''}
         `;
         list.appendChild(div);
       });
 
       updateStartButton();
     }
+
+    window.selectPresenter = function(playerId) {
+      socket.emit('host:select_presenter', { playerId });
+    };
 
     function renderPresenter() {
       const info = document.getElementById('presenterInfo');
@@ -821,20 +836,19 @@
     }
 
     function updateStartButton() {
-      const audiencePlayers = state.players.filter(p => p.role !== 'presenter');
-      const presenterPlayers = state.players.filter(p => p.role === 'presenter');
-      const canStart = audiencePlayers.length >= 1 && presenterPlayers.length >= 1;
+      const totalPlayers = state.players.length;
+      const canStart = totalPlayers >= 1;
       document.getElementById('btnStartGame').disabled = !canStart;
       const note = document.getElementById('startNote');
+      const pres = state.players.find(p => p.role === 'presenter');
       if (canStart) {
-        note.textContent = `✅ Ready! ${presenterPlayers.length} presenter + ${audiencePlayers.length} audience.`;
-        note.style.color = 'var(--success)';
+        if (pres) {
+          note.textContent = `✅ Ready! Presenter: ${pres.name}. Click Start Game to begin.`;
+        } else {
+          note.textContent = `💡 Select a Presenter with 👑, or click Start Game to assign a random one.`;
+        }
       } else {
-        const needPres  = presenterPlayers.length  < 1 ? ' a presenter' : '';
-        const needAud   = audiencePlayers.length   < 1 ? ' an audience member' : '';
-        const and = needPres && needAud ? ' &' : '';
-        note.innerHTML = `Need${needPres}${and}${needAud} to start.`;
-        note.style.color = 'var(--muted)';
+        note.textContent = `Waiting for players to join…`;
       }
     }
 

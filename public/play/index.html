@@ -1068,14 +1068,17 @@ function joinRoom() {
 
   if (!code || code.length < 4) { showToast('Enter a 4-letter room code'); return; }
   if (!name)                     { showToast('Enter your name'); return; }
-  if (!state.role)               { showToast('Choose Presenter or Audience'); return; }
 
   state.code = code;
   state.name = name;
 
-  sessionStorage.setItem('pi_code', code);
-  sessionStorage.setItem('pi_name', name);
-  sessionStorage.setItem('pi_role', state.role);
+  if (!state.playerId) {
+    state.playerId = 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+  }
+
+  localStorage.setItem('pi_code', code);
+  localStorage.setItem('pi_name', name);
+  localStorage.setItem('pi_player_id', state.playerId);
 
   initSocket();
 }
@@ -1093,7 +1096,7 @@ function initSocket() {
     socket.emit('play:join_room', {
       roomCode: state.code,
       name: state.name,
-      role: state.role,
+      playerId: state.playerId,
     });
   });
 
@@ -1104,7 +1107,14 @@ function initSocket() {
   // ── joined ──
   socket.on('play:joined', (data) => {
     const { code, player, status: gameState } = data;
-    state.role = player ? player.role : state.role;
+    if (player) {
+      state.playerId = player.id;
+      state.role = player.role;
+      localStorage.setItem('pi_player_id', player.id);
+    }
+    localStorage.setItem('pi_code', code);
+    localStorage.setItem('pi_name', state.name);
+
     updateWaitingScreen(code, 1, '', gameState);
     showScreen('screen-waiting');
   });
@@ -1115,6 +1125,15 @@ function initSocket() {
     const audienceCount = players ? players.filter(p => p.role !== 'presenter').length : 0;
     state.audienceCount = audienceCount;
     document.getElementById('waiting-count').textContent = players ? players.length : 0;
+
+    // Sync my role if changed by host
+    if (players && state.playerId) {
+      const me = players.find(p => p.id === state.playerId || p.name === state.name);
+      if (me && me.role !== state.role) {
+        state.role = me.role;
+        showToast(me.role === 'presenter' ? '🎤 You were chosen as Presenter!' : '👥 You are in the Audience!');
+      }
+    }
   });
 
   // ── game slide ──
@@ -1197,6 +1216,15 @@ function initSocket() {
     state.hasRated = true;
     document.getElementById('rating-submit-btn').style.display = 'none';
     document.getElementById('rating-done-msg').style.display = 'flex';
+  });
+
+  // ── game:reset ──
+  socket.on('game:reset', () => {
+    state.myVote = null;
+    state.myRating = null;
+    state.hasRated = false;
+    showScreen('screen-waiting');
+    showToast('Game restarted by host!');
   });
 
   // ── error ──
@@ -1510,16 +1538,28 @@ function escHtml(str) {
 
 // ─── INIT ─────────────────────────────────────────────────────────────────
 (function init() {
-  // Pre-fill from sessionStorage
-  const savedCode = sessionStorage.getItem('pi_code');
-  const savedName = sessionStorage.getItem('pi_name');
-  const savedRole = sessionStorage.getItem('pi_role');
+  const savedCode = localStorage.getItem('pi_code');
+  const savedName = localStorage.getItem('pi_name');
+  const savedId   = localStorage.getItem('pi_player_id');
 
   if (savedCode) codeInput.value = savedCode;
   if (savedName) document.getElementById('name-input').value = savedName;
-  if (savedRole) selectRole(savedRole);
 
-  showScreen('screen-join');
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramCode = urlParams.get('code');
+  if (paramCode) {
+    codeInput.value = paramCode.toUpperCase();
+  }
+
+  // Auto-rejoin if code, name, and playerId exist
+  if ((savedCode || paramCode) && savedName && savedId) {
+    state.code = (paramCode || savedCode).toUpperCase();
+    state.name = savedName;
+    state.playerId = savedId;
+    initSocket();
+  } else {
+    showScreen('screen-join');
+  }
 })();
 </script>
 </body>

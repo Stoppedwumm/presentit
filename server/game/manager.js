@@ -63,16 +63,30 @@ class GameManager {
       }
     });
 
+    socket.on('host:select_presenter', ({ playerId }) => {
+      const room = this.findRoomBySocket(socket.id);
+      if (!room || room.status !== 'LOBBY') return;
+
+      room.players.forEach(p => {
+        p.role = (p.id === playerId) ? 'presenter' : 'audience';
+      });
+
+      this.emitRoomUpdate(room);
+    });
+
     socket.on('host:start_game', () => {
       const room = this.findRoomBySocket(socket.id);
       if (!room) return;
+
+      if (room.players.length === 0) {
+        return socket.emit('error', { message: 'Need at least 1 player to start' });
+      }
 
       // Assign random presenter if none selected
       let presenter = room.players.find(p => p.role === 'presenter');
       if (!presenter && room.players.length > 0) {
         presenter = room.players[Math.floor(Math.random() * room.players.length)];
         presenter.role = 'presenter';
-        // set other players to audience
         room.players.forEach(p => {
           if (p.id !== presenter.id) p.role = 'audience';
         });
@@ -84,6 +98,26 @@ class GameManager {
       } else {
         this.startPresentingPhase(room);
       }
+    });
+
+    socket.on('host:restart_game', () => {
+      const room = this.findRoomBySocket(socket.id);
+      if (!room) return;
+
+      room.status = 'LOBBY';
+      room.currentVoteSlideIdx = 0;
+      room.slideWinners = {};
+      room.votes = {};
+      room.presenterSlideIdx = 0;
+      room.ratings = [];
+
+      this.io.to(room.code).emit('game:reset', {
+        code: room.code,
+        players: room.players,
+        status: 'LOBBY'
+      });
+
+      this.emitRoomUpdate(room);
     });
 
     socket.on('host:next', () => {
@@ -111,31 +145,32 @@ class GameManager {
     });
 
     // ── PLAYER (MOBILE) EVENTS ──
-    socket.on('play:join_room', ({ roomCode, name, role }) => {
+    socket.on('play:join_room', ({ roomCode, name, playerId }) => {
       const room = this.getRoom(roomCode);
       if (!room) {
         return socket.emit('error', { message: 'Room not found. Check code.' });
       }
 
-      // Check if user already in room with this socket
-      let player = room.players.find(p => p.socketId === socket.id);
-      if (!player) {
+      // Check if player is rejoining via playerId or socket.id or name
+      let player = room.players.find(p => (playerId && p.id === playerId) || p.socketId === socket.id);
+      
+      if (!player && name) {
+        player = room.players.find(p => p.name.trim().toLowerCase() === name.trim().toLowerCase());
+      }
+
+      if (player) {
+        // Re-bind socket and update name
+        player.socketId = socket.id;
+        if (name) player.name = name;
+      } else {
+        // Create new player
         player = {
-          id: socket.id,
+          id: playerId || `p_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
           socketId: socket.id,
           name: name || `Player ${room.players.length + 1}`,
-          role: role === 'presenter' ? 'presenter' : 'audience'
+          role: 'audience'
         };
-
-        // If presenter chosen and one exists, convert existing to audience
-        if (player.role === 'presenter') {
-          room.players.forEach(p => p.role = 'audience');
-        }
-
         room.players.push(player);
-      } else {
-        player.name = name || player.name;
-        player.role = role || player.role;
       }
 
       socket.join(room.code);

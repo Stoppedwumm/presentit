@@ -1119,6 +1119,10 @@ function connectSocket(code) {
   socket.on('game:results', (data) => {
     renderFinalResults(data);
   });
+
+  socket.on('game:reset', () => {
+    showScreen('screen-lobby');
+  });
 }
 
 function renderPresenterLiveSlide(data) {
