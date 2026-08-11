@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>PresentIt – Play</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #07071a;
+      --card-bg: rgba(255,255,255,0.05);
+      --card-border: rgba(255,255,255,0.1);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --grad-primary: linear-gradient(135deg, #667eea, #764ba2);
+      --grad-hot: linear-gradient(135deg, #f093fb, #f5576c);
+      --grad-green: linear-gradient(135deg, #4ade80, #22c55e);
+      --grad-orange: linear-gradient(135deg, #f97316, #ef4444);
+      --success: #4ade80;
+      --danger: #f87171;
+      --warning: #fbbf24;
+      --radius: 16px;
+      --radius-sm: 10px;
+
+      /* Option accent colors */
+      --opt-0: linear-gradient(135deg, #667eea, #764ba2);
+      --opt-1: linear-gradient(135deg, #f093fb, #f5576c);
+      --opt-2: linear-gradient(135deg, #4ade80, #06b6d4);
+      --opt-3: linear-gradient(135deg, #f97316, #f59e0b);
+      --opt-4: linear-gradient(135deg, #e879f9, #8b5cf6);
+      --opt-5: linear-gradient(135deg, #06b6d4, #3b82f6);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    /* ─── APP SHELL ─────────────────────────────────── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 480px;
+      min-height: 100dvh;
+      margin: 0 auto;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ─── SCREENS ────────────────────────────────────── */
+    .screen {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      min-height: 100dvh;
+      padding: 24px 20px;
+      animation: fadeSlideIn 0.35s ease both;
+    }
+    .screen.active { display: flex; }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── SCROLLABLE INNER ────────────────────────────── */
+    .scroll-inner {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .scroll-inner::-webkit-scrollbar { display: none; }
+
+    /* ─── GLASS CARD ─────────────────────────────────── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 20px;
+    }
+
+    /* ─── LOGO ───────────────────────────────────────── */
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: var(--grad-primary);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .logo-text {
+      font-size: 22px;
+      font-weight: 900;
+      background: var(--grad-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ─── FORM ELEMENTS ──────────────────────────────── */
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border: 1.5px solid var(--card-border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    input[type="text"]:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102,126,234,0.25);
+    }
+    input[type="text"]::placeholder { color: rgba(148,163,184,0.5); }
+
+    #code-input {
+      font-size: 32px;
+      letter-spacing: 0.2em;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    /* ─── BUTTONS ────────────────────────────────────── */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 52px;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.45; pointer-events: none; }
+
+    .btn-primary {
+      background: var(--grad-primary);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(102,126,234,0.4);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 28px rgba(102,126,234,0.55); transform: translateY(-1px); }
+
+    .btn-hot {
+      background: var(--grad-hot);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(240,147,251,0.4);
+    }
+
+    .btn-green {
+      background: var(--grad-green);
+      color: #07071a;
+      box-shadow: 0 4px 20px rgba(74,222,128,0.35);
+    }
+    .btn-green:hover { box-shadow: 0 6px 28px rgba(74,222,128,0.5); transform: translateY(-1px); }
+
+    .btn-danger-ghost {
+      background: rgba(248,113,113,0.08);
+      border: 1.5px solid rgba(248,113,113,0.25);
+      color: rgba(248,113,113,0.65);
+      font-size: 13px;
+      font-weight: 600;
+      min-height: 44px;
+    }
+    .btn-danger-ghost:hover { background: rgba(248,113,113,0.12); }
+
+    .btn-ghost {
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      color: var(--text);
+    }
+
+    /* ─── ROLE SELECTOR ──────────────────────────────── */
+    .role-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .role-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 90px;
+      border-radius: 14px;
+      border: 2px solid var(--card-border);
+      background: var(--card-bg);
+      color: var(--muted);
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .role-btn .role-icon { font-size: 28px; }
+    .role-btn.selected {
+      border-color: #667eea;
+      background: rgba(102,126,234,0.15);
+      color: var(--text);
+      box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+    }
+    .role-btn.selected.hot {
+      border-color: #f5576c;
+      background: rgba(245,87,108,0.15);
+      box-shadow: 0 0 0 3px rgba(245,87,108,0.2);
+    }
+
+    /* ─── BADGE ──────────────────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .badge-presenter {
+      background: rgba(245,87,108,0.18);
+      border: 1px solid rgba(245,87,108,0.35);
+      color: #f5576c;
+    }
+    .badge-audience {
+      background: rgba(102,126,234,0.18);
+      border: 1px solid rgba(102,126,234,0.35);
+      color: #a5b4fc;
+    }
+
+    /* ─── WAITING SCREEN ─────────────────────────────── */
+    .waiting-anim {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      align-items: center;
+      margin: 20px 0;
+    }
+    .waiting-anim span {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #667eea;
+      animation: bounce 1.2s ease-in-out infinite;
+    }
+    .waiting-anim span:nth-child(2) { animation-delay: 0.2s; background: #f5576c; }
+    .waiting-anim span:nth-child(3) { animation-delay: 0.4s; background: #4ade80; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0) scale(1); opacity: 0.6; }
+      40% { transform: translateY(-12px) scale(1.1); opacity: 1; }
+    }
+
+    /* ─── LOOK AWAY SCREEN ───────────────────────────── */
+    .look-away-icon {
+      font-size: 80px;
+      text-align: center;
+      animation: eyePulse 1.5s ease-in-out infinite;
+      display: block;
+      margin: 12px 0;
+    }
+    @keyframes eyePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.12); }
+    }
+
+    /* ─── VOTE PROGRESS ──────────────────────────────── */
+    .vote-progress-bar {
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 100px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .vote-progress-fill {
+      height: 100%;
+      background: var(--grad-primary);
+      border-radius: 100px;
+      transition: width 0.4s ease;
+    }
+
+    /* ─── OPTION BUTTONS ─────────────────────────────── */
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .options-grid.grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .option-btn {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 60px;
+      border: none;
+      border-radius: 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      text-align: center;
+      padding: 12px 16px;
+    }
+    .option-btn:active { transform: scale(0.97); }
+    .option-btn:nth-child(1) { background: var(--opt-0); box-shadow: 0 4px 16px rgba(102,126,234,0.35); }
+    .option-btn:nth-child(2) { background: var(--opt-1); box-shadow: 0 4px 16px rgba(240,147,251,0.35); }
+    .option-btn:nth-child(3) { background: var(--opt-2); box-shadow: 0 4px 16px rgba(74,222,128,0.35); }
+    .option-btn:nth-child(4) { background: var(--opt-3); box-shadow: 0 4px 16px rgba(249,115,22,0.35); }
+    .option-btn:nth-child(5) { background: var(--opt-4); box-shadow: 0 4px 16px rgba(232,121,249,0.35); }
+    .option-btn:nth-child(6) { background: var(--opt-5); box-shadow: 0 4px 16px rgba(6,182,212,0.35); }
+    .option-btn.voted-for {
+      ring: 3px solid #fff;
+      box-shadow: 0 0 0 3px #fff, 0 4px 20px rgba(255,255,255,0.3) !important;
+      transform: scale(1.02);
+    }
+    .option-btn.not-voted { opacity: 0.45; }
+
+    /* Photo options */
+    .option-photo {
+      flex-direction: column;
+      min-height: 140px;
+      padding: 0;
+      overflow: hidden;
+    }
+    .option-photo img {
+      width: 100%;
+      height: 100px;
+      object-fit: cover;
+      display: block;
+    }
+    .option-photo .opt-label {
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      text-shadow: none;
+    }
+
+    /* ─── VOTED CONFIRMATION ─────────────────────────── */
+    .voted-confirm {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 24px;
+      background: rgba(74,222,128,0.1);
+      border: 1.5px solid rgba(74,222,128,0.3);
+      border-radius: var(--radius);
+      text-align: center;
+      animation: fadeSlideIn 0.3s ease both;
+    }
+    .voted-confirm .check { font-size: 48px; animation: popIn 0.4s cubic-bezier(.17,.67,.32,1.5) both; }
+    @keyframes popIn {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    .voted-confirm h3 { font-size: 22px; font-weight: 800; color: var(--success); }
+    .voted-confirm p  { font-size: 14px; color: var(--muted); }
+    .voted-confirm .voted-option {
+      font-size: 15px; font-weight: 700; color: var(--text);
+      background: rgba(255,255,255,0.08);
+      padding: 8px 16px; border-radius: 8px;
+    }
+
+    /* ─── RESULTS BARS ───────────────────────────────── */
+    .result-bar-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .result-bar-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .result-bar-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .result-bar-label .pct { color: var(--muted); font-size: 12px; }
+    .result-bar-track {
+      height: 10px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 100px;
+      overflow: hidden;
+    }
+    .result-bar-fill {
+      height: 100%;
+      border-radius: 100px;
+      transition: width 0.8s cubic-bezier(.22,.68,.35,1.2);
+    }
+    .result-bar-fill:nth-child(1) { background: var(--opt-0); }
+    .result-bar-item:nth-child(1) .result-bar-fill { background: linear-gradient(90deg, #667eea, #764ba2); }
+    .result-bar-item:nth-child(2) .result-bar-fill { background: linear-gradient(90deg, #f093fb, #f5576c); }
+    .result-bar-item:nth-child(3) .result-bar-fill { background: linear-gradient(90deg, #4ade80, #06b6d4); }
+    .result-bar-item:nth-child(4) .result-bar-fill { background: linear-gradient(90deg, #f97316, #f59e0b); }
+    .result-bar-item:nth-child(5) .result-bar-fill { background: linear-gradient(90deg, #e879f9, #8b5cf6); }
+    .result-bar-item:nth-child(6) .result-bar-fill { background: linear-gradient(90deg, #06b6d4, #3b82f6); }
+    .result-bar-item.my-pick .result-bar-label .opt-name::after {
+      content: ' ✓ You';
+      color: var(--success);
+      font-size: 11px;
+    }
+
+    /* ─── QUESTION HEADER ────────────────────────────── */
+    .question-header {
+      margin-bottom: 20px;
+    }
+    .slide-counter {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: rgba(255,255,255,0.05);
+      padding: 4px 10px;
+      border-radius: 100px;
+      border: 1px solid var(--card-border);
+      margin-bottom: 12px;
+    }
+    .slide-counter .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #667eea;
+      animation: pulse-dot 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .question-text {
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    /* ─── PREDEFINED SLIDE ───────────────────────────── */
+    .predefined-content {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--card-border);
+      border-left: 4px solid #667eea;
+      border-radius: 12px;
+      padding: 20px;
+      font-size: 17px;
+      line-height: 1.6;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* ─── LISTEN UP ──────────────────────────────────── */
+    .listen-mic {
+      font-size: 72px;
+      text-align: center;
+      display: block;
+      animation: micBob 1.8s ease-in-out infinite;
+      margin: 20px 0;
+    }
+    @keyframes micBob {
+      0%, 100% { transform: translateY(0) rotate(-3deg); }
+      50% { transform: translateY(-10px) rotate(3deg); }
+    }
+
+    /* ─── RATING SCREEN ──────────────────────────────── */
+    .rating-numbers {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+    .rating-num {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 56px;
+      border-radius: 12px;
+      border: 2px solid var(--card-border);
+      background: var(--card-bg);
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .rating-num:hover { border-color: rgba(102,126,234,0.5); color: var(--text); }
+    .rating-num.selected {
+      color: #fff;
+      border-color: transparent;
+      transform: scale(1.08);
+    }
+    .rating-num:nth-child(1).selected  { background: var(--opt-1); box-shadow: 0 4px 16px rgba(245,87,108,0.4); }
+    .rating-num:nth-child(2).selected  { background: var(--opt-1); box-shadow: 0 4px 16px rgba(245,87,108,0.4); }
+    .rating-num:nth-child(3).selected  { background: var(--opt-3); box-shadow: 0 4px 16px rgba(249,115,22,0.4); }
+    .rating-num:nth-child(4).selected  { background: var(--opt-3); box-shadow: 0 4px 16px rgba(249,115,22,0.4); }
+    .rating-num:nth-child(5).selected  { background: var(--opt-2); box-shadow: 0 4px 16px rgba(74,222,128,0.4); }
+    .rating-num:nth-child(6).selected  { background: var(--opt-2); box-shadow: 0 4px 16px rgba(74,222,128,0.4); }
+    .rating-num:nth-child(7).selected  { background: var(--opt-0); box-shadow: 0 4px 16px rgba(102,126,234,0.4); }
+    .rating-num:nth-child(8).selected  { background: var(--opt-0); box-shadow: 0 4px 16px rgba(102,126,234,0.4); }
+    .rating-num:nth-child(9).selected  { background: var(--opt-4); box-shadow: 0 4px 16px rgba(232,121,249,0.4); }
+    .rating-num:nth-child(10).selected { background: var(--grad-hot); box-shadow: 0 4px 20px rgba(240,147,251,0.5); }
+
+    .rating-emoji {
+      font-size: 40px;
+      text-align: center;
+      display: block;
+      margin: 10px 0;
+      transition: all 0.2s;
+    }
+
+    /* ─── SUSPENSE ───────────────────────────────────── */
+    .suspense-orbs {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 24px 0;
+    }
+    .suspense-orb {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      animation: orbPulse 1.6s ease-in-out infinite;
+    }
+    .suspense-orb:nth-child(1) { background: #667eea; animation-delay: 0s; }
+    .suspense-orb:nth-child(2) { background: #f5576c; animation-delay: 0.3s; }
+    .suspense-orb:nth-child(3) { background: #4ade80; animation-delay: 0.6s; }
+    .suspense-orb:nth-child(4) { background: #f59e0b; animation-delay: 0.9s; }
+    @keyframes orbPulse {
+      0%, 100% { transform: scale(0.6); opacity: 0.4; }
+      50% { transform: scale(1.2); opacity: 1; }
+    }
+
+    /* ─── FINAL SCORE ────────────────────────────────── */
+    .score-ring {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: conic-gradient(from 180deg, #667eea, #f5576c, #4ade80, #667eea);
+      margin: 20px auto;
+      padding: 4px;
+      animation: spinSlow 4s linear infinite;
+    }
+    @keyframes spinSlow {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+    .score-ring-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: spinSlow 4s linear infinite reverse;
+    }
+    .score-number {
+      font-size: 52px;
+      font-weight: 900;
+      background: var(--grad-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+    .score-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ─── INDIVIDUAL RATINGS LIST ─────────────────────── */
+    .ratings-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+    .rating-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--card-border);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .rating-chip .chip-score {
+      font-size: 15px;
+      font-weight: 800;
+      background: var(--grad-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ─── ERROR TOAST ────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(248,113,113,0.15);
+      border: 1px solid rgba(248,113,113,0.4);
+      color: #fca5a5;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      backdrop-filter: blur(12px);
+      transition: transform 0.3s cubic-bezier(.32,.72,.32,1);
+      z-index: 999;
+      max-width: calc(100% - 40px);
+      white-space: normal;
+      text-align: center;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ─── UTILITIES ──────────────────────────────────── */
+    .mt-8  { margin-top: 8px; }
+    .mt-12 { margin-top: 12px; }
+    .mt-16 { margin-top: 16px; }
+    .mt-20 { margin-top: 20px; }
+    .mt-24 { margin-top: 24px; }
+    .mb-4  { margin-bottom: 4px; }
+    .mb-8  { margin-bottom: 8px; }
+    .mb-12 { margin-bottom: 12px; }
+    .mb-16 { margin-bottom: 16px; }
+    .mb-20 { margin-bottom: 20px; }
+    .text-center { text-align: center; }
+    .text-sm  { font-size: 13px; }
+    .text-muted { color: var(--muted); }
+    .font-bold { font-weight: 700; }
+    .font-black { font-weight: 900; }
+    h1 { font-size: 28px; font-weight: 900; line-height: 1.2; }
+    h2 { font-size: 22px; font-weight: 800; line-height: 1.3; }
+    h3 { font-size: 18px; font-weight: 700; }
+    .divider {
+      height: 1px;
+      background: var(--card-border);
+      margin: 16px 0;
+    }
+    .spacer { flex: 1; }
+
+    /* ─── BG ORBS ────────────────────────────────────── */
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.12;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .bg-orb-1 { width: 300px; height: 300px; background: #667eea; top: -100px; right: -100px; }
+    .bg-orb-2 { width: 250px; height: 250px; background: #f5576c; bottom: 0; left: -80px; }
+    #app > * { position: relative; z-index: 1; }
+  </style>
+</head>
+<body>
+
+<!-- BG ORBS -->
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+
+<div id="app">
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SCREEN: JOIN                                       -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div id="screen-join" class="screen active">
+    <div class="logo">
+      <div class="logo-icon">🎤</div>
+      <span class="logo-text">PresentIt</span>
+    </div>
+
+    <h1 class="mb-8">Join a Game</h1>
+    <p class="text-muted text-sm mb-20">Enter the room code shown on screen</p>
+
+    <div class="mb-16">
+      <label for="code-input">Room Code</label>
+      <input type="text" id="code-input" placeholder="ABCD" maxlength="4" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" inputmode="text" />
+    </div>
+
+    <div class="mb-16">
+      <label for="name-input">Your Name</label>
+      <input type="text" id="name-input" placeholder="e.g. Alex 🦄" maxlength="20" autocomplete="off" />
+    </div>
+
+    <div class="mb-16">
+      <label>Join As</label>
+      <div class="role-grid">
+        <button class="role-btn" id="role-presenter" onclick="selectRole('presenter')">
+          <span class="role-icon">🎤</span>
+          <span>Presenter</span>
+        </button>
+        <button class="role-btn" id="role-audience" onclick="selectRole('audience')">
+          <span class="role-icon">👥</span>
+          <span>Audience</span>
+        </button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="join-btn" onclick="joinRoom()">
+      <span>Join Game</span>
+      <span>→</span>
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SCREEN: WAITING                                    -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div id="screen-waiting" class="screen">
+    <div class="logo">
+      <div class="logo-icon">🎤</div>
+      <span class="logo-text">PresentIt</span>
+    </div>
+
+    <div class="text-center mt-20">
+      <div id="waiting-badge" class="badge mb-20" style="display:inline-flex"></div>
+
+      <div class="waiting-anim">
+        <span></span><span></span><span></span>
+      </div>
+
+      <h2 class="mb-8" id="waiting-headline">Waiting for the game to start...</h2>
+      <p class="text-muted text-sm" id="waiting-subtitle">The host will kick things off shortly</p>
+    </div>
+
+    <div class="divider mt-24"></div>
+
+    <div class="card mt-16 text-center">
+      <div class="text-muted text-sm mb-4">Room Code</div>
+      <div style="font-size:28px; font-weight:900; letter-spacing:0.2em;" id="waiting-code">----</div>
+    </div>
+
+    <div class="card mt-12 text-center">
+      <div class="text-muted text-sm mb-4">Players in room</div>
+      <div style="font-size:32px; font-weight:900;" id="waiting-count">0</div>
+    </div>
+
+    <div id="presenter-tip" class="card mt-12 text-center" style="display:none; background:rgba(245,87,108,0.08); border-color:rgba(245,87,108,0.25);">
+      <div style="font-size:28px; margin-bottom:8px;">🎤</div>
+      <div style="font-weight:700; color:#f5576c;">You are the Presenter!</div>
+      <div class="text-muted text-sm mt-8">Get ready to yap about your slides</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SCREEN: LOOK AWAY (Presenter – voting in progress) -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div id="screen-look-away" class="screen">
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 20px;">
+      <span class="look-away-icon">👀</span>
+      <h1 style="font-size:36px; font-weight:900; background:var(--grad-orange); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:8px;">LOOK AWAY!</h1>
+      <p class="text-muted mt-8">Audience is voting — no peeking!</p>
+
+      <div class="card mt-24" style="width:100%; max-width:300px;">
+        <div class="text-sm text-muted mb-8">Votes received</div>
+        <div style="font-size:28px; font-weight:900;" id="look-vote-count">0 / ?</div>
+        <div class="vote-progress-bar mt-8">
+          <div class="vote-progress-fill" id="look-vote-bar" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:0 0 20px;">
+      <div class="text-center text-muted text-sm mb-8">⚠️ Only press when ready to reveal</div>
+      <button class="btn btn-danger-ghost" id="look-away-next-btn" onclick="presenterNext()">
+        🔒 Close Voting &amp; Show Results
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SCREEN: AUDIENCE VOTING                           -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div id="screen-audience-vote" class="screen">
+    <div class="question-header">
+      <div class="slide-counter">
+        <div class="dot"></div>
+        <span id="vote-slide-counter">Slide 1 of 1</span>
+      </div>
+      <div class="question-text" id="vote-question">Question goes here?</div>
+    </div>
+
+    <div class="scroll-inner">
+      <div id="vote-options" class="options-grid"></div>
+
+      <div id="voted-confirmation" style="display:none;" class="voted-confirm">
+        <span class="check">✅</span>
+        <h3>Voted!</h3>
+        <div class="voted-option" id="voted-option-label">Option A</div>
+        <p>Your vote is locked in. Waiting for others...</p>
+      </div>
+
+      <div id="vote-live-count" class="text-center text-muted text-sm mt-16" style="display:none;">
+        <span id="vote-live-text">0 people voted</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SCREEN: RESULTS (Audience + Presenter)            -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div id="screen-results" class="screen">
+    <div class="question-header">
+      <div class="slide-counter">
+        <span id="results-slide-counter">Results</span>
+      </div>
+      <div class="question-text" id="results-question">Results</div>
+    </div>
+
+    <div class="scroll-inner">
+      <div id="results-bars" class="result-bar-wrap mb-20"></div>
+    </div>
+
+    <div id="results-next-btn-wrap" style="display:none; padding-top:12px;">
+      <button class="btn btn-green" onclick="presenterNext()">
+        Next Slide →
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SCREEN: PREDEFINED – Presenter (Remote Control) -->
+  <div id="screen-predefined-presenter" class="screen">
+    <div class="text-center mb-16">
+      <div class="badge badge-presenter mb-12" style="display:inline-flex;">🎤 Presentation Remote</div>
+    </div>
+
+    <div class="scroll-inner">
+      <div class="predefined-content" id="predefined-text-presenter" style="background:#000000;color:#ffffff;border:1px solid rgba(255,255,255,0.2);padding:24px;border-radius:16px;min-height:180px;display:flex;flex-direction:column;justify-content:center;text-align:center;">...</div>
+    </div>
+
+    <div style="padding-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <button class="btn btn-ghost" onclick="presenterPrev()" style="background:rgba(255,255,255,0.1);color:#ffffff;">
+        ← Previous
+      </button>
+      <button class="btn btn-green" onclick="presenterNext()">
+        Next →
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SCREEN: PREDEFINED – Audience                     -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div id="screen-predefined-audience" class="screen">
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+      <span class="listen-mic">🎤</span>
+      <h2 class="mb-8">Listen Up!</h2>
+      <p class="text-muted">The presenter is talking.<br>Sit back and pay attention!</p>
+
+      <div class="card mt-20" style="width:100%; max-width:280px; background:rgba(102,126,234,0.08); border-color:rgba(102,126,234,0.3);">
+        <div class="text-sm text-muted">Now presenting</div>
+        <div class="mt-8 font-bold" id="predefined-presenter-name" style="font-size:18px;">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SCREEN: RATING (Audience)                         -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div id="screen-rating" class="screen">
+    <div class="text-center mb-20">
+      <div style="font-size:40px; margin-bottom:8px;">⭐</div>
+      <h2 class="mb-8">Rate the Presenter!</h2>
+      <p class="text-muted text-sm" id="rating-presenter-name" style="font-size:15px; font-weight:700; color:var(--text);">—</p>
+    </div>
+
+    <div class="mb-8 text-center">
+      <span class="rating-emoji" id="rating-emoji">🤔</span>
+    </div>
+
+    <div class="mb-16">
+      <div class="rating-numbers" id="rating-numbers"></div>
+    </div>
+
+    <div class="text-center text-muted text-sm mb-16" id="rating-selected-text" style="min-height:20px;"></div>
+
+    <button class="btn btn-primary" id="rating-submit-btn" onclick="submitRating()" disabled>
+      Submit Rating
+    </button>
+
+    <div id="rating-done-msg" class="voted-confirm mt-20" style="display:none;">
+      <span class="check">⭐</span>
+      <h3>Rated!</h3>
+      <p>Waiting for everyone else to rate...</p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SCREEN: PRESENTER SUSPENSE (during rating)        -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div id="screen-suspense" class="screen">
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+      <div style="font-size:64px; margin-bottom:16px;">😰</div>
+      <h2 class="mb-8">Hold Tight!</h2>
+      <p class="text-muted mb-4">The audience is judging you...</p>
+      <p class="text-muted text-sm">No pressure 😬</p>
+
+      <div class="suspense-orbs mt-24">
+        <div class="suspense-orb"></div>
+        <div class="suspense-orb"></div>
+        <div class="suspense-orb"></div>
+        <div class="suspense-orb"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SCREEN: FINAL RESULTS                             -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div id="screen-final" class="screen">
+    <div class="text-center mb-8">
+      <div class="badge badge-presenter mb-12" style="display:inline-flex;">🏆 Final Score</div>
+      <h2 id="final-presenter-name">Results</h2>
+    </div>
+
+    <div class="score-ring">
+      <div class="score-ring-inner">
+        <div class="score-number" id="final-score">—</div>
+        <div class="score-label">/ 10</div>
+      </div>
+    </div>
+
+    <div class="text-center mb-20">
+      <div id="final-verdict" style="font-size:32px; margin-bottom:8px;">🎉</div>
+      <p class="text-muted text-sm" id="final-subtitle">Average from all voters</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="scroll-inner">
+      <div class="text-muted text-sm mb-12 text-center">Individual Ratings</div>
+      <div class="ratings-list" id="final-ratings-list"></div>
+    </div>
+  </div>
+
+</div><!-- /#app -->
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────
+const state = {
+  socket: null,
+  role: null,       // 'presenter' | 'audience'
+  name: '',
+  code: '',
+  myVote: null,       // optionIndex voted
+  myRating: null,
+  currentSlide: null,
+  slideIndex: 0,
+  totalSlides: 0,
+  voteCount: 0,
+  audienceCount: 0,
+  hasRated: false,
+};
+
+// ─── SCREEN MANAGEMENT ────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = '';
+  });
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.add('active');
+  }
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ─── ROLE SELECTION ───────────────────────────────────────────────────────
+function selectRole(r) {
+  state.role = r;
+  document.getElementById('role-presenter').classList.remove('selected', 'hot');
+  document.getElementById('role-audience').classList.remove('selected', 'hot');
+  if (r === 'presenter') {
+    document.getElementById('role-presenter').classList.add('selected', 'hot');
+  } else {
+    document.getElementById('role-audience').classList.add('selected');
+  }
+}
+
+// ─── CODE INPUT AUTO-UPPERCASE ────────────────────────────────────────────
+const codeInput = document.getElementById('code-input');
+codeInput.addEventListener('input', function() {
+  const raw = this.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 4);
+  this.value = raw;
+});
+
+// ─── JOIN ─────────────────────────────────────────────────────────────────
+function joinRoom() {
+  const code = codeInput.value.trim().toUpperCase();
+  const name = document.getElementById('name-input').value.trim();
+
+  if (!code || code.length < 4) { showToast('Enter a 4-letter room code'); return; }
+  if (!name)                     { showToast('Enter your name'); return; }
+  if (!state.role)               { showToast('Choose Presenter or Audience'); return; }
+
+  state.code = code;
+  state.name = name;
+
+  sessionStorage.setItem('pi_code', code);
+  sessionStorage.setItem('pi_name', name);
+  sessionStorage.setItem('pi_role', state.role);
+
+  initSocket();
+}
+
+// ─── SOCKET ───────────────────────────────────────────────────────────────
+function initSocket() {
+  if (state.socket) {
+    state.socket.disconnect();
+  }
+
+  const socket = io({ transports: ['websocket', 'polling'] });
+  state.socket = socket;
+
+  socket.on('connect', () => {
+    socket.emit('play:join_room', {
+      roomCode: state.code,
+      name: state.name,
+      role: state.role,
+    });
+  });
+
+  socket.on('connect_error', () => {
+    showToast('Connection error. Retrying...');
+  });
+
+  // ── joined ──
+  socket.on('play:joined', (data) => {
+    const { code, player, status: gameState } = data;
+    state.role = player ? player.role : state.role;
+    updateWaitingScreen(code, 1, '', gameState);
+    showScreen('screen-waiting');
+  });
+
+  // ── room update ──
+  socket.on('room:update', (data) => {
+    const { players, presenter, status: gs } = data;
+    const audienceCount = players ? players.filter(p => p.role !== 'presenter').length : 0;
+    state.audienceCount = audienceCount;
+    document.getElementById('waiting-count').textContent = players ? players.length : 0;
+  });
+
+  // ── game slide ──
+  socket.on('game:slide', (data) => {
+    const { slideType, question, options, imageUrl, contentText, index, total } = data;
+    state.currentSlide = data;
+    state.slideIndex = index || 0;
+    state.totalSlides = total || 1;
+    state.myVote = null;
+    state.voteCount = 0;
+
+    handleSlide('slide_voting', data, state.slideIndex, state.totalSlides);
+  });
+
+  // ── presenter remote ──
+  socket.on('game:presenter_remote', (data) => {
+    state.role = 'presenter';
+    showScreen('screen-predefined-presenter');
+  });
+
+  // ── live presenter slide sync ──
+  socket.on('game:presenter_slide', (data) => {
+    const { slide, index, total, presenterName } = data;
+    if (state.role === 'presenter') {
+      showScreen('screen-predefined-presenter');
+      const text = slide.contentText || slide.winner || slide.question || '';
+      document.getElementById('predefined-text-presenter').innerHTML = `
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">SLIDE ${(index || 0) + 1} OF ${total || 1}</div>
+        <div style="font-size:18px;font-weight:800;margin-bottom:12px;color:#a5b4fc;">${escHtml(slide.question || '')}</div>
+        <div style="font-size:16px;line-height:1.5;">${escHtml(text)}</div>
+      `;
+    } else {
+      showScreen('screen-predefined-audience');
+      document.getElementById('predefined-presenter-name').textContent = `${presenterName || 'Presenter'} (Slide ${(index || 0) + 1}/${total || 1})`;
+    }
+  });
+
+  // ── vote results ──
+  socket.on('game:vote_results', (data) => {
+    const { results, winner, question } = data;
+    showVoteResults(results ? results.map(r => r.votes) : [], results ? results.length : 0, { question, content: { options: results ? results.map(r => r.option) : [] } });
+  });
+
+  // ── rating ──
+  socket.on('game:rating', (data) => {
+    const { presenterName } = data || {};
+    if (state.role === 'presenter') {
+      showScreen('screen-suspense');
+    } else {
+      showRatingScreen(presenterName || 'Presenter');
+    }
+  });
+
+  // ── final results ──
+  socket.on('game:results', (data) => {
+    const { ratings, average, presenterName } = data;
+    showFinalResults(ratings, parseFloat(average) || 10, presenterName);
+  });
+
+  // ── vote progress ──
+  socket.on('game:vote_progress', (data) => {
+    const { votesIn, votersTotal } = data;
+    state.voteCount = votesIn || 0;
+    state.audienceCount = votersTotal || 0;
+    updateVoteProgress(votesIn, votersTotal);
+
+    const liveText = document.getElementById('vote-live-text');
+    if (liveText) {
+      liveText.textContent = `${votesIn} of ${votersTotal} voted`;
+    }
+  });
+
+  // ── vote:confirmed ──
+  socket.on('vote:confirmed', (data) => {
+    showVotedConfirmation(state.myVote);
+  });
+
+  // ── rating:confirmed ──
+  socket.on('rating:confirmed', () => {
+    state.hasRated = true;
+    document.getElementById('rating-submit-btn').style.display = 'none';
+    document.getElementById('rating-done-msg').style.display = 'flex';
+  });
+
+  // ── error ──
+  socket.on('error', (data) => {
+    showToast(data.message || 'Something went wrong');
+  });
+}
+
+// ─── WAITING SCREEN ───────────────────────────────────────────────────────
+function updateWaitingScreen(code, playerCount, presenterName, gs) {
+  document.getElementById('waiting-code').textContent = code || '----';
+  document.getElementById('waiting-count').textContent = playerCount || 0;
+
+  const badge = document.getElementById('waiting-badge');
+  const headline = document.getElementById('waiting-headline');
+  const subtitle = document.getElementById('waiting-subtitle');
+  const tip = document.getElementById('presenter-tip');
+
+  if (state.role === 'presenter') {
+    badge.className = 'badge badge-presenter mb-20';
+    badge.innerHTML = '🎤 Presenter';
+    headline.textContent = 'Waiting for host to start...';
+    subtitle.textContent = 'You\'re the presenter — get ready to yap!';
+    tip.style.display = '';
+  } else {
+    badge.className = 'badge badge-audience mb-20';
+    badge.innerHTML = '👥 Audience';
+    headline.textContent = 'Waiting for the game to start...';
+    subtitle.textContent = presenterName
+      ? `${presenterName} will be presenting` : 'The host will kick things off shortly';
+    tip.style.display = 'none';
+  }
+}
+
+// ─── HANDLE SLIDE ─────────────────────────────────────────────────────────
+function handleSlide(gs, slide, slideIndex, totalSlides) {
+  if (!slide) return;
+
+  const counterText = `Slide ${slideIndex + 1} of ${totalSlides}`;
+
+  if (slide.type === 'predefined') {
+    if (state.role === 'presenter') {
+      document.getElementById('predefined-text-presenter').textContent = slide.content?.text || '';
+      showScreen('screen-predefined-presenter');
+    } else {
+      // Try to get presenter name
+      const pName = document.getElementById('predefined-presenter-name');
+      if (pName) pName.textContent = state.presenterName || 'Presenter';
+      showScreen('screen-predefined-audience');
+    }
+    return;
+  }
+
+  if (gs === 'slide_voting') {
+    if (state.role === 'presenter') {
+      // Look away
+      updateVoteProgress(0, state.audienceCount);
+      showScreen('screen-look-away');
+    } else {
+      // Audience voting
+      document.getElementById('vote-slide-counter').textContent = counterText;
+      document.getElementById('vote-question').textContent = slide.question || '';
+      renderOptions(slide);
+      document.getElementById('voted-confirmation').style.display = 'none';
+      document.getElementById('vote-options').style.display = '';
+      document.getElementById('vote-live-count').style.display = 'none';
+      showScreen('screen-audience-vote');
+    }
+  }
+}
+
+// ─── RENDER OPTIONS ───────────────────────────────────────────────────────
+function renderOptions(slide) {
+  const container = document.getElementById('vote-options');
+  container.innerHTML = '';
+
+  const type = (slide.slideType || slide.type || '').toLowerCase();
+  const options = slide.options || slide.content?.options || [];
+
+  const isPhotoType = type.includes('photo');
+
+  if (isPhotoType && options.length <= 4) {
+    container.classList.add('grid-2');
+  } else {
+    container.classList.remove('grid-2');
+  }
+
+  options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    if (isPhotoType) btn.classList.add('option-photo');
+
+    let imgUrl = typeof opt === 'object' ? (opt.image_url || opt.imageUrl || opt.image) : null;
+    let label = typeof opt === 'string' ? opt : (opt.caption || opt.text || opt.label || `Option ${i+1}`);
+
+    if (imgUrl) {
+      const img = document.createElement('img');
+      img.src = imgUrl;
+      img.alt = label;
+      img.loading = 'lazy';
+      const labelEl = document.createElement('div');
+      labelEl.className = 'opt-label';
+      labelEl.textContent = label;
+      btn.appendChild(img);
+      btn.appendChild(labelEl);
+    } else {
+      btn.textContent = label;
+    }
+
+    btn.addEventListener('click', () => castVote(i, btn, opt, options));
+    container.appendChild(btn);
+  });
+}
+
+// ─── CAST VOTE ────────────────────────────────────────────────────────────
+function castVote(index, btnEl, opt, options) {
+  if (state.myVote !== null) return; // Already voted
+  let choice = typeof opt === 'string' ? opt : (opt ? (opt.caption || opt.text || opt.id) : `Option ${index+1}`);
+  state.socket.emit('vote:submit', { choice, text: choice });
+  // Optimistically mark
+  state.myVote = index;
+  showVotedConfirmation(index, opt, options);
+}
+
+function showVotedConfirmation(index, opt, options) {
+  const optContainer = document.getElementById('vote-options');
+  const liveCount = document.getElementById('vote-live-count');
+  optContainer.style.display = 'none';
+  liveCount.style.display = '';
+
+  // Get label
+  let label = `Option ${index + 1}`;
+  if (options) {
+    const o = options[index];
+    if (typeof o === 'string') label = o;
+    else if (o) label = o.label || o.caption || label;
+  } else if (state.currentSlide) {
+    const o = state.currentSlide.content?.options?.[index];
+    if (typeof o === 'string') label = o;
+    else if (o) label = o.label || o.caption || label;
+  }
+
+  document.getElementById('voted-option-label').textContent = label;
+  document.getElementById('voted-confirmation').style.display = 'flex';
+}
+
+// ─── VOTE PROGRESS ────────────────────────────────────────────────────────
+function updateVoteProgress(count, total) {
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+  const bar = document.getElementById('look-vote-bar');
+  const label = document.getElementById('look-vote-count');
+  if (bar) bar.style.width = pct + '%';
+  if (label) label.textContent = `${count} / ${total || '?'}`;
+}
+
+// ─── SHOW VOTE RESULTS ────────────────────────────────────────────────────
+function showVoteResults(results, total, slide) {
+  const barsContainer = document.getElementById('results-bars');
+  barsContainer.innerHTML = '';
+
+  const options = slide?.content?.options || [];
+  const type = slide?.type || 'text';
+
+  document.getElementById('results-question').textContent = slide?.question || 'Results';
+  document.getElementById('results-slide-counter').textContent = `Slide ${state.slideIndex + 1}`;
+
+  results.forEach((count, i) => {
+    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+    const isMe = state.myVote === i;
+
+    const opt = options[i];
+    let label = `Option ${i + 1}`;
+    if (typeof opt === 'string') label = opt;
+    else if (opt) label = opt.label || opt.caption || label;
+
+    const item = document.createElement('div');
+    item.className = 'result-bar-item' + (isMe ? ' my-pick' : '');
+
+    item.innerHTML = `
+      <div class="result-bar-label">
+        <span class="opt-name">${escHtml(label)}</span>
+        <span class="pct">${count} vote${count !== 1 ? 's' : ''} · ${pct}%</span>
+      </div>
+      <div class="result-bar-track">
+        <div class="result-bar-fill" style="width:0%"></div>
+      </div>
+    `;
+    barsContainer.appendChild(item);
+
+    // animate bar
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        item.querySelector('.result-bar-fill').style.width = pct + '%';
+      });
+    });
+  });
+
+  // Show/hide next button for presenter
+  const nextWrap = document.getElementById('results-next-btn-wrap');
+  nextWrap.style.display = state.role === 'presenter' ? '' : 'none';
+
+  showScreen('screen-results');
+}
+
+// ─── RATING SCREEN ────────────────────────────────────────────────────────
+function showRatingScreen(presenterName) {
+  state.presenterName = presenterName;
+  state.hasRated = false;
+  state.myRating = null;
+
+  document.getElementById('rating-presenter-name').textContent = presenterName || 'The Presenter';
+  document.getElementById('rating-submit-btn').disabled = true;
+  document.getElementById('rating-submit-btn').style.display = '';
+  document.getElementById('rating-done-msg').style.display = 'none';
+  document.getElementById('rating-selected-text').textContent = '';
+  document.getElementById('rating-emoji').textContent = '🤔';
+
+  const numbersEl = document.getElementById('rating-numbers');
+  numbersEl.innerHTML = '';
+  for (let i = 1; i <= 10; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'rating-num';
+    btn.textContent = i;
+    btn.setAttribute('data-rating', i);
+    btn.addEventListener('click', () => selectRating(i));
+    numbersEl.appendChild(btn);
+  }
+
+  showScreen('screen-rating');
+}
+
+function selectRating(n) {
+  if (state.hasRated) return;
+  state.myRating = n;
+
+  document.querySelectorAll('.rating-num').forEach((btn, idx) => {
+    btn.classList.toggle('selected', idx + 1 === n);
+  });
+
+  document.getElementById('rating-submit-btn').disabled = false;
+
+  const emojis = ['😭','😞','😒','😐','🙂','😊','😄','🤩','🔥','💯'];
+  document.getElementById('rating-emoji').textContent = emojis[n - 1] || '🤔';
+
+  const labels = ['Terrible','Bad','Meh','Okay','Not bad','Good','Great','Amazing','Incredible','GOAT 🐐'];
+  document.getElementById('rating-selected-text').textContent = `${n}/10 – ${labels[n-1]}`;
+}
+
+function submitRating() {
+  if (state.myRating === null || state.hasRated) return;
+  state.socket.emit('rating:submit', { score: state.myRating });
+}
+
+// ─── FINAL RESULTS ────────────────────────────────────────────────────────
+function showFinalResults(ratings, average, presenterName) {
+  document.getElementById('final-presenter-name').textContent = presenterName || 'Results';
+  document.getElementById('final-score').textContent = typeof average === 'number' ? average.toFixed(1) : '—';
+
+  const score = average || 0;
+  let verdict = '😐';
+  if (score >= 9) verdict = '🏆 Legendary!';
+  else if (score >= 7) verdict = '🔥 On Fire!';
+  else if (score >= 5) verdict = '👏 Solid!';
+  else if (score >= 3) verdict = '😅 Tried hard!';
+  else verdict = '💀 Rough one...';
+
+  document.getElementById('final-verdict').textContent = verdict;
+  document.getElementById('final-subtitle').textContent =
+    state.role === 'presenter'
+      ? 'Your final score from the audience'
+      : `Average score for ${presenterName}`;
+
+  // Individual ratings
+  const list = document.getElementById('final-ratings-list');
+  list.innerHTML = '';
+  if (Array.isArray(ratings)) {
+    ratings.forEach((r) => {
+      const chip = document.createElement('div');
+      chip.className = 'rating-chip';
+      const isMe = r.voterName === state.name;
+      chip.innerHTML = `
+        <span>${escHtml(r.voterName || r.name)}${isMe ? ' (you)' : ''}</span>
+        <span class="chip-score">${r.score || r.rating}</span>
+      `;
+      list.appendChild(chip);
+    });
+  }
+
+  showScreen('screen-final');
+}
+
+// ─── PRESENTER CONTROLS ───────────────────────────────────────────────────
+function presenterNext() {
+  if (state.role !== 'presenter') return;
+  state.socket?.emit('presenter:slide_change', { action: 'next' });
+}
+
+function presenterPrev() {
+  if (state.role !== 'presenter') return;
+  state.socket?.emit('presenter:slide_change', { action: 'prev' });
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+(function init() {
+  // Pre-fill from sessionStorage
+  const savedCode = sessionStorage.getItem('pi_code');
+  const savedName = sessionStorage.getItem('pi_name');
+  const savedRole = sessionStorage.getItem('pi_role');
+
+  if (savedCode) codeInput.value = savedCode;
+  if (savedName) document.getElementById('name-input').value = savedName;
+  if (savedRole) selectRole(savedRole);
+
+  showScreen('screen-join');
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PresentIt – Where Presentations Get Wild</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #07071a;
+      --card-bg: rgba(255,255,255,0.05);
+      --card-border: rgba(255,255,255,0.1);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --primary: linear-gradient(135deg, #667eea, #764ba2);
+      --hot: linear-gradient(135deg, #f093fb, #f5576c);
+      --success: #4ade80;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ── Canvas background ── */
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── Floating shapes ── */
+    .shapes {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .shape {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.18;
+      animation: floatShape linear infinite;
+    }
+    .shape:nth-child(1)  { width:520px;height:520px;background:#667eea;top:-120px;left:-140px;animation-duration:18s; }
+    .shape:nth-child(2)  { width:400px;height:400px;background:#f093fb;top:60%;right:-100px;animation-duration:22s;animation-delay:-8s; }
+    .shape:nth-child(3)  { width:300px;height:300px;background:#764ba2;bottom:10%;left:20%;animation-duration:15s;animation-delay:-4s; }
+    .shape:nth-child(4)  { width:200px;height:200px;background:#f5576c;top:30%;left:55%;animation-duration:20s;animation-delay:-12s; }
+    .shape:nth-child(5)  { width:160px;height:160px;background:#4ade80;bottom:25%;right:25%;animation-duration:25s;animation-delay:-6s; }
+
+    @keyframes floatShape {
+      0%   { transform: translate(0,0) scale(1); }
+      33%  { transform: translate(40px,-60px) scale(1.05); }
+      66%  { transform: translate(-30px,40px) scale(0.97); }
+      100% { transform: translate(0,0) scale(1); }
+    }
+
+    /* ── Floating card particles ── */
+    .card-particles {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .cp {
+      position: absolute;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(6px);
+      border-radius: 16px;
+      animation: floatCard linear infinite;
+      opacity: 0;
+    }
+
+    @keyframes floatCard {
+      0%   { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+      5%   { opacity: 0.6; }
+      90%  { opacity: 0.4; }
+      100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
+    }
+
+    /* ── Layout ── */
+    .page {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    /* ── Hero card ── */
+    .hero-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 32px;
+      padding: 64px 72px;
+      max-width: 720px;
+      width: 100%;
+      text-align: center;
+      box-shadow:
+        0 0 0 1px rgba(102,126,234,0.15),
+        0 32px 80px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+      animation: cardEntrance 0.8s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    @keyframes cardEntrance {
+      from { opacity: 0; transform: translateY(40px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(102,126,234,0.15);
+      border: 1px solid rgba(102,126,234,0.3);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #a5b4fc;
+      margin-bottom: 32px;
+      animation: cardEntrance 0.8s 0.1s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    .badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: #4ade80;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #4ade80;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* ── Title ── */
+    h1 {
+      font-size: clamp(64px, 10vw, 100px);
+      font-weight: 900;
+      letter-spacing: -3px;
+      line-height: 1;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 30%, #667eea 60%, #764ba2 100%);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradShift 4s ease-in-out infinite, cardEntrance 0.8s 0.15s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    @keyframes gradShift {
+      0%,100% { background-position: 0% 50%; }
+      50%      { background-position: 100% 50%; }
+    }
+
+    .tagline {
+      font-size: clamp(18px, 3vw, 24px);
+      font-weight: 400;
+      color: var(--muted);
+      margin-bottom: 48px;
+      animation: cardEntrance 0.8s 0.2s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    .tagline span {
+      color: #c4b5fd;
+      font-style: italic;
+    }
+
+    /* ── CTA buttons ── */
+    .cta-group {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 48px;
+      animation: cardEntrance 0.8s 0.25s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 36px;
+      border-radius: 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.15);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .btn:hover::after { opacity: 1; }
+    .btn:hover { transform: translateY(-3px) scale(1.02); }
+    .btn:active { transform: translateY(0) scale(0.99); }
+
+    .btn-host {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      box-shadow: 0 8px 32px rgba(102,126,234,0.4);
+    }
+    .btn-host:hover { box-shadow: 0 12px 48px rgba(102,126,234,0.6); }
+
+    .btn-join {
+      background: linear-gradient(135deg, #f093fb, #f5576c);
+      color: #fff;
+      box-shadow: 0 8px 32px rgba(240,147,251,0.35);
+    }
+    .btn-join:hover { box-shadow: 0 12px 48px rgba(240,147,251,0.55); }
+
+    /* ── Divider ── */
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+      margin: 8px 0 32px;
+      animation: cardEntrance 0.8s 0.3s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    /* ── Feature bullets ── */
+    .features {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      text-align: left;
+      margin-bottom: 36px;
+      animation: cardEntrance 0.8s 0.35s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    .feature {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      font-size: 15px;
+      color: var(--muted);
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .feature:hover {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.14);
+      color: var(--text);
+    }
+    .feature-icon {
+      flex-shrink: 0;
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .fi-1 { background: rgba(102,126,234,0.2); }
+    .fi-2 { background: rgba(240,147,251,0.2); }
+    .fi-3 { background: rgba(74,222,128,0.2); }
+    .feature strong { color: var(--text); }
+
+    /* ── Admin link ── */
+    .admin-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: all 0.2s;
+      animation: cardEntrance 0.8s 0.4s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    .admin-link:hover {
+      color: var(--text);
+      border-color: rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.05);
+    }
+    .admin-link svg { opacity: 0.6; }
+
+    /* ── Footer ── */
+    footer {
+      position: relative;
+      z-index: 2;
+      margin-top: 36px;
+      text-align: center;
+      font-size: 13px;
+      color: rgba(148,163,184,0.5);
+      animation: cardEntrance 0.8s 0.5s cubic-bezier(0.16,1,0.3,1) both;
+      letter-spacing: 0.05em;
+    }
+    footer span {
+      background: linear-gradient(135deg, #f093fb, #f5576c);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 600;
+    }
+
+    @media (max-width: 600px) {
+      .hero-card { padding: 40px 24px; }
+      .cta-group { flex-direction: column; }
+      .btn { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient blobs -->
+  <div class="shapes">
+    <div class="shape"></div>
+    <div class="shape"></div>
+    <div class="shape"></div>
+    <div class="shape"></div>
+    <div class="shape"></div>
+  </div>
+
+  <!-- Floating mini-cards -->
+  <div class="card-particles" id="cardParticles"></div>
+
+  <div class="page">
+    <div class="hero-card">
+
+      <div class="badge">🎮 Live Presentation Game</div>
+
+      <h1>PresentIt</h1>
+      <p class="tagline">Where presentations get <span>wild</span></p>
+
+      <div class="cta-group">
+        <a class="btn btn-host" href="/host">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          Host a Game
+        </a>
+        <a class="btn btn-join" href="/play">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          Join a Game
+        </a>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon fi-1">🎨</div>
+          <div>
+            <strong>Build a template</strong> — craft the perfect slide deck with custom prompts for your audience to fill in
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon fi-2">🗳️</div>
+          <div>
+            <strong>Play &amp; vote</strong> — the audience sees surprise slides, rates answers, and chaos ensues
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon fi-3">⭐</div>
+          <div>
+            <strong>Rate the presenter</strong> — after the show, everyone scores how well they sold the madness
+          </div>
+        </div>
+      </div>
+
+      <a class="admin-link" href="/admin">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        Admin (Template Builder)
+      </a>
+
+    </div>
+
+    <footer>Made with <span>chaos</span> &amp; a little bit of love</footer>
+  </div>
+
+  <script>
+    // ── Floating card particles ──────────────────────────────────────
+    (function () {
+      const container = document.getElementById('cardParticles');
+      const count = 14;
+      const sizes  = [60, 80, 100, 50, 70, 90, 55, 65, 75, 85, 45, 95, 110, 48];
+      const labels = ['📊','📈','🎤','💡','🗂️','📝','🎯','🔥','✨','🏆','🎲','🃏','📌','💬'];
+
+      for (let i = 0; i < count; i++) {
+        const el = document.createElement('div');
+        el.className = 'cp';
+        const s = sizes[i];
+        el.style.cssText = `
+          width:${s}px;height:${s}px;
+          left:${Math.random()*100}%;
+          font-size:${s * 0.35}px;
+          display:flex;align-items:center;justify-content:center;
+          animation-duration:${12 + Math.random()*16}s;
+          animation-delay:${Math.random()*-20}s;
+        `;
+        el.textContent = labels[i % labels.length];
+        container.appendChild(el);
+      }
+    })();
+
+    // ── Subtle mouse parallax on hero card ──────────────────────────
+    const card = document.querySelector('.hero-card');
+    document.addEventListener('mousemove', (e) => {
+      const cx = window.innerWidth  / 2;
+      const cy = window.innerHeight / 2;
+      const dx = (e.clientX - cx) / cx;
+      const dy = (e.clientY - cy) / cy;
+      card.style.transform = `perspective(1200px) rotateY(${dx * 3}deg) rotateX(${-dy * 2}deg)`;
+    });
+    document.addEventListener('mouseleave', () => {
+      card.style.transform = '';
+    });
+  </script>
+</body>
+</html>

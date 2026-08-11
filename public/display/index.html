@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PresentIt – Display</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #07071a;
+      --card-bg:      rgba(255,255,255,0.05);
+      --card-border:  rgba(255,255,255,0.10);
+      --grad-primary: linear-gradient(135deg, #667eea, #764ba2);
+      --grad-hot:     linear-gradient(135deg, #f093fb, #f5576c);
+      --grad-gold:    linear-gradient(135deg, #f7971e, #ffd200);
+      --grad-green:   linear-gradient(135deg, #11998e, #38ef7d);
+      --text:         #e2e8f0;
+      --muted:        #94a3b8;
+      --success:      #4ade80;
+      --danger:       #f87171;
+      --warning:      #fbbf24;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ─── Starfield ─────────────────────────────────────────────────────────── */
+    #starfield {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0;
+      overflow: hidden;
+    }
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: #fff;
+      animation: twinkle var(--dur, 3s) ease-in-out infinite var(--delay, 0s);
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.1; transform: scale(1); }
+      50%       { opacity: 0.9; transform: scale(1.4); }
+    }
+
+    /* ─── App Shell ─────────────────────────────────────────────────────────── */
+    #app {
+      position: relative; z-index: 1;
+      width: 100vw; height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ─── Screens ───────────────────────────────────────────────────────────── */
+    .screen {
+      display: none;
+      width: 100%; height: 100%;
+      position: absolute; inset: 0;
+      align-items: center; justify-content: center;
+      flex-direction: column;
+      animation: screenIn 0.45s cubic-bezier(0.22,1,0.36,1) both;
+    }
+    .screen.active { display: flex; }
+
+    @keyframes screenIn {
+      from { opacity: 0; transform: translateY(28px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ─── Glass Card ────────────────────────────────────────────────────────── */
+    .glass {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 24px;
+    }
+
+    /* ─── Gradient Text ─────────────────────────────────────────────────────── */
+    .grad-text {
+      background: var(--grad-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .grad-text-hot {
+      background: var(--grad-hot);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .grad-text-gold {
+      background: var(--grad-gold);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ─── Buttons ───────────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 14px 36px;
+      border: none; border-radius: 12px; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 700;
+      letter-spacing: 0.03em;
+      background: var(--grad-primary); color: #fff;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+      box-shadow: 0 4px 24px rgba(102,126,234,0.35);
+    }
+    .btn:hover  { transform: translateY(-2px) scale(1.03); box-shadow: 0 8px 32px rgba(102,126,234,0.5); }
+    .btn:active { transform: scale(0.97); }
+
+    /* ─── Input ─────────────────────────────────────────────────────────────── */
+    .input {
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-family: 'Inter', sans-serif; font-size: 1.25rem; font-weight: 700;
+      color: var(--text); outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      letter-spacing: 0.15em; text-transform: uppercase; text-align: center;
+    }
+    .input:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102,126,234,0.25);
+    }
+    .input::placeholder { color: var(--muted); text-transform: none; letter-spacing: 0; }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       SCREEN 1 — CODE ENTRY
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    #screen-entry {
+      gap: 0;
+    }
+    #screen-entry .logo {
+      font-size: 2rem; font-weight: 900; letter-spacing: -0.03em;
+      margin-bottom: 2.5rem;
+    }
+    #screen-entry .card {
+      padding: 3rem 3.5rem; text-align: center;
+      min-width: 420px;
+    }
+    #screen-entry h1 {
+      font-size: 1.75rem; font-weight: 800; margin-bottom: 0.5rem;
+    }
+    #screen-entry p {
+      color: var(--muted); font-size: 1rem; margin-bottom: 2rem;
+    }
+    #screen-entry .input {
+      width: 100%; margin-bottom: 1.25rem;
+      font-size: 2rem; padding: 18px 24px;
+    }
+    #screen-entry .btn { width: 100%; font-size: 1.1rem; padding: 16px; }
+    #entry-error {
+      margin-top: 1rem; color: var(--danger);
+      font-size: 0.9rem; font-weight: 600; min-height: 1.4em;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       SCREEN 2 — LOBBY
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    #screen-lobby {
+      display: none;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 5vw;
+      padding: 40px 6vw;
+    }
+    #screen-lobby.active { display: flex; }
+
+    /* Left panel */
+    .lobby-left {
+      display: flex; flex-direction: column; align-items: flex-start;
+      gap: 1.5rem; flex: 1;
+    }
+    .lobby-label {
+      font-size: 1rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .lobby-join-url {
+      font-size: 1.35rem; font-weight: 600;
+      color: var(--text);
+      opacity: 0.85;
+    }
+    .lobby-join-url span { color: #a78bfa; font-weight: 800; }
+    #lobby-room-code {
+      font-size: clamp(6rem, 12vw, 10rem);
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      line-height: 1;
+      font-family: 'Inter', monospace;
+      background: var(--grad-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 40px rgba(102,126,234,0.6));
+      animation: codePulse 3s ease-in-out infinite;
+    }
+    @keyframes codePulse {
+      0%, 100% { filter: drop-shadow(0 0 30px rgba(102,126,234,0.5)); }
+      50%       { filter: drop-shadow(0 0 60px rgba(118,75,162,0.9)); }
+    }
+    .lobby-players-card {
+      padding: 1.5rem 2rem;
+      display: flex; align-items: center; gap: 1.5rem;
+    }
+    .lobby-players-icon { font-size: 2.2rem; }
+    .lobby-players-count { font-size: 3rem; font-weight: 900; line-height: 1; }
+    .lobby-players-label { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
+    .lobby-presenter-badge {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 20px;
+      background: rgba(102,126,234,0.15);
+      border: 1px solid rgba(102,126,234,0.3);
+      border-radius: 50px;
+      font-size: 1rem; font-weight: 600;
+    }
+    .lobby-presenter-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 10px var(--success);
+      animation: breathe 2s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    .lobby-waiting {
+      font-size: 1.1rem; font-weight: 600; color: var(--muted);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .waiting-dots span {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; background: #667eea;
+      animation: dotBounce 1.4s ease-in-out infinite;
+    }
+    .waiting-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .waiting-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dotBounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+      40%            { transform: translateY(-8px); opacity: 1; }
+    }
+
+    /* Right panel — QR */
+    .lobby-right {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 1.25rem;
+    }
+    .qr-wrapper {
+      padding: 20px;
+      border-radius: 20px;
+      background: #fff;
+      box-shadow: 0 0 60px rgba(102,126,234,0.4);
+    }
+    #qrcode canvas, #qrcode img { display: block; border-radius: 6px; }
+    .qr-label {
+      font-size: 1rem; font-weight: 700; color: var(--muted);
+      letter-spacing: 0.06em; text-transform: uppercase; text-align: center;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       SCREEN 3 — PREDEFINED SLIDE
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    #screen-predefined {
+      padding: 60px 8vw;
+      text-align: center;
+      gap: 2rem;
+    }
+    .slide-badge-row {
+      display: flex; align-items: center; gap: 14px;
+      position: absolute; top: 36px; left: 44px;
+    }
+    .slide-num-badge {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 6px 16px;
+      font-size: 0.85rem; font-weight: 700; letter-spacing: 0.08em;
+      color: var(--muted); text-transform: uppercase;
+    }
+    .type-badge {
+      padding: 6px 18px; border-radius: 50px;
+      font-size: 0.8rem; font-weight: 800; letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .type-badge.info  { background: rgba(102,126,234,0.2); color: #a78bfa; border: 1px solid rgba(102,126,234,0.4); }
+    .type-badge.vote  { background: rgba(240,147,251,0.15); color: #f093fb; border: 1px solid rgba(240,147,251,0.3); }
+    .type-badge.rate  { background: rgba(251,191,36,0.15); color: var(--warning); border: 1px solid rgba(251,191,36,0.3); }
+
+    #predefined-text {
+      font-size: clamp(2.5rem, 6vw, 5.5rem);
+      font-weight: 900;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      background: var(--grad-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 50px rgba(102,126,234,0.5));
+      max-width: 80%;
+      animation: glowPulse 3s ease-in-out infinite;
+    }
+    @keyframes glowPulse {
+      0%, 100% { filter: drop-shadow(0 0 30px rgba(102,126,234,0.4)); }
+      50%       { filter: drop-shadow(0 0 70px rgba(118,75,162,0.8)); }
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       SCREEN 4 — VOTING SLIDE
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    #screen-voting {
+      padding: 24px 5vw 100px;
+      gap: 2.5rem;
+      justify-content: flex-start;
+      align-items: stretch;
+    }
+
+    #voting-question {
+      font-size: clamp(2rem, 4.5vw, 3.8rem);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      text-align: center;
+      background: var(--grad-hot);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-top: 52px;
+      padding: 0 4vw;
+    }
+
+    #voting-options {
+      display: grid;
+      gap: 1.5rem;
+      flex: 1;
+      width: 100%;
+      /* grid-template-columns set by JS */
+    }
+    .option-card {
+      background: var(--card-bg);
+      border: 2px solid var(--card-border);
+      border-radius: 20px;
+      padding: 1.5rem;
+      display: flex; align-items: center; gap: 1.25rem;
+      transition: transform 0.2s, border-color 0.2s;
+      animation: optionIn 0.5s cubic-bezier(0.22,1,0.36,1) both;
+      overflow: hidden;
+    }
+    .option-card:hover { transform: translateY(-3px); border-color: rgba(102,126,234,0.4); }
+
+    .option-letter {
+      min-width: 52px; height: 52px;
+      border-radius: 14px;
+      background: var(--grad-primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; font-weight: 900; color: #fff;
+      flex-shrink: 0;
+    }
+
+    .option-text {
+      font-size: clamp(1rem, 2vw, 1.65rem);
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--text);
+    }
+
+    /* Photo option */
+    .option-img-wrap {
+      width: 100%; height: 140px;
+      border-radius: 12px; overflow: hidden;
+      flex-shrink: 0;
+    }
+    .option-img-wrap img {
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
+    }
+
+    /* Photo card vertical layout */
+    .option-card.photo-card {
+      flex-direction: column;
+      align-items: stretch;
+      padding: 1rem;
+      gap: 0.75rem;
+    }
+    .option-card.photo-card .option-letter {
+      align-self: flex-start;
+    }
+
+    /* text_photo card */
+    .option-card.textphoto-card {
+      flex-direction: column;
+      padding: 0;
+      overflow: hidden;
+      gap: 0;
+    }
+    .option-card.textphoto-card .option-img-wrap { height: 130px; border-radius: 0; }
+    .option-card.textphoto-card .option-footer {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 0.85rem 1rem;
+    }
+
+    @keyframes optionIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.95); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Vote progress bar */
+    #vote-bar-wrap {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 18px 5vw 22px;
+      background: linear-gradient(to top, rgba(7,7,26,0.95), transparent);
+      display: flex; flex-direction: column; gap: 8px;
+      z-index: 10;
+    }
+    .vote-bar-info {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .vote-bar-label { font-size: 1rem; font-weight: 700; color: var(--muted); }
+    .vote-bar-count { font-size: 1.1rem; font-weight: 800; color: var(--text); }
+    .vote-track {
+      height: 8px; border-radius: 100px;
+      background: rgba(255,255,255,0.08);
+      overflow: hidden;
+    }
+    .vote-fill {
+      height: 100%; border-radius: 100px;
+      background: var(--grad-primary);
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       SCREEN 5 — VOTE RESULTS
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    #screen-results {
+      padding: 24px 5vw 60px;
+      gap: 2rem;
+      justify-content: flex-start;
+      align-items: stretch;
+    }
+
+    #results-question {
+      font-size: clamp(1.6rem, 3.5vw, 2.8rem);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      text-align: center;
+      background: var(--grad-hot);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-top: 52px;
+      padding: 0 4vw;
+    }
+
+    #results-options { display: flex; flex-direction: column; gap: 1rem; flex: 1; }
+
+    .result-row {
+      display: flex; align-items: center; gap: 1.25rem;
+      padding: 1rem 1.5rem;
+      border-radius: 16px;
+      border: 2px solid var(--card-border);
+      background: var(--card-bg);
+      transition: border-color 0.3s, box-shadow 0.3s;
+      animation: optionIn 0.5s cubic-bezier(0.22,1,0.36,1) both;
+      overflow: hidden;
+      position: relative;
+    }
+    .result-row.winner {
+      border-color: rgba(251,191,36,0.6);
+      box-shadow: 0 0 40px rgba(251,191,36,0.2), inset 0 0 40px rgba(251,191,36,0.04);
+    }
+    .result-row.winner::before {
+      content: '👑';
+      position: absolute; right: 1.5rem; top: 50%; transform: translateY(-50%);
+      font-size: 1.75rem;
+      animation: crownBounce 1.2s ease-in-out infinite;
+    }
+    @keyframes crownBounce {
+      0%, 100% { transform: translateY(-50%) rotate(-5deg); }
+      50%       { transform: translateY(calc(-50% - 4px)) rotate(5deg); }
+    }
+
+    .result-letter {
+      min-width: 44px; height: 44px; border-radius: 12px;
+      background: var(--grad-primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; font-weight: 900; color: #fff; flex-shrink: 0;
+    }
+    .result-winner-letter { background: var(--grad-gold); }
+
+    .result-meta { flex: 1; min-width: 0; }
+    .result-label { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .result-bar-track { height: 10px; border-radius: 100px; background: rgba(255,255,255,0.07); overflow: hidden; }
+    .result-bar-fill {
+      height: 100%; border-radius: 100px;
+      background: var(--grad-primary);
+      width: 0%;
+      transition: width 1s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .result-winner-fill { background: var(--grad-gold); }
+
+    .result-pct {
+      font-size: 1.5rem; font-weight: 900;
+      min-width: 64px; text-align: right;
+    }
+    .result-votes { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+
+    .results-continue {
+      text-align: center;
+      font-size: 1rem; font-weight: 600; color: var(--muted);
+      animation: breathe 2.5s ease-in-out infinite;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       SCREEN 6 — RATING
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    #screen-rating {
+      gap: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .rating-stars-bg {
+      position: absolute; inset: 0; pointer-events: none;
+      overflow: hidden;
+    }
+    .float-star {
+      position: absolute;
+      font-size: clamp(1.5rem, 3vw, 3rem);
+      animation: floatStar var(--dur,8s) ease-in-out infinite var(--delay,0s);
+      opacity: 0.15;
+    }
+    @keyframes floatStar {
+      0%   { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+      10%  { opacity: 0.2; }
+      90%  { opacity: 0.15; }
+      100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
+    }
+
+    .rating-main-icon {
+      font-size: clamp(4rem, 8vw, 7rem);
+      line-height: 1;
+      animation: iconPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    @keyframes iconPop {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    .rating-title {
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      font-weight: 900; letter-spacing: -0.02em; text-align: center;
+      background: var(--grad-gold);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .rating-presenter {
+      font-size: clamp(1.2rem, 2.5vw, 2rem);
+      font-weight: 700; color: var(--muted); text-align: center;
+    }
+    .rating-presenter span { color: var(--text); }
+
+    .rating-instruction {
+      font-size: clamp(1rem, 2vw, 1.5rem);
+      font-weight: 600; color: var(--muted); text-align: center;
+    }
+    .phone-emoji { animation: shake 1s ease-in-out infinite; display: inline-block; }
+    @keyframes shake {
+      0%, 100% { transform: rotate(-10deg); }
+      50%       { transform: rotate(10deg); }
+    }
+
+    .rating-progress-card {
+      padding: 1.25rem 2.5rem;
+      display: flex; align-items: center; gap: 1.5rem;
+    }
+    .rating-prog-num {
+      font-size: 3rem; font-weight: 900; line-height: 1;
+      background: var(--grad-gold);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .rating-prog-label { font-size: 0.9rem; color: var(--muted); }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       SCREEN 7 — FINAL RESULTS
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    #screen-final {
+      gap: 2rem;
+      padding: 40px 8vw;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Confetti */
+    .confetti-container {
+      position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+    }
+    .confetti-piece {
+      position: absolute;
+      width: 10px; height: 14px;
+      border-radius: 2px;
+      animation: confettiFall var(--dur, 4s) linear infinite var(--delay, 0s);
+      opacity: 0;
+    }
+    @keyframes confettiFall {
+      0%   { transform: translateY(-20px) rotate(0deg);   opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0.5; }
+    }
+
+    .final-thanks {
+      font-size: clamp(0.9rem, 1.5vw, 1.2rem);
+      font-weight: 700; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--muted);
+    }
+
+    .final-presenter-name {
+      font-size: clamp(2rem, 5vw, 4rem);
+      font-weight: 900; letter-spacing: -0.02em;
+      background: var(--grad-hot);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .final-score-card {
+      padding: 2rem 4rem;
+      text-align: center;
+      position: relative;
+    }
+    .final-score-label {
+      font-size: 1rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem;
+    }
+    .final-score-num {
+      font-size: clamp(4rem, 10vw, 8rem);
+      font-weight: 900; line-height: 1;
+      background: var(--grad-gold);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 40px rgba(255,210,0,0.4));
+    }
+    .final-score-max { font-size: 1.5rem; color: var(--muted); font-weight: 700; }
+
+    .final-stars {
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      letter-spacing: 4px;
+    }
+
+    .final-ratings-list {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem;
+      max-width: 700px;
+    }
+    .rating-chip {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 50px;
+      padding: 6px 18px;
+      font-size: 0.9rem; font-weight: 600;
+      display: flex; align-items: center; gap: 8px;
+      animation: chipIn 0.4s cubic-bezier(0.22,1,0.36,1) both;
+    }
+    @keyframes chipIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .final-tagline {
+      font-size: clamp(1.2rem, 2.5vw, 2rem);
+      font-weight: 800; letter-spacing: -0.01em;
+      background: var(--grad-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ─── Connection indicator ──────────────────────────────────────────────── */
+    #connection-pill {
+      position: fixed; top: 18px; right: 22px; z-index: 100;
+      display: flex; align-items: center; gap: 7px;
+      padding: 6px 14px; border-radius: 50px;
+      background: rgba(0,0,0,0.45); backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.07);
+      font-size: 0.75rem; font-weight: 700; color: var(--muted);
+      transition: opacity 0.3s;
+    }
+    #conn-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--muted);
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    #conn-dot.connected    { background: var(--success); box-shadow: 0 0 8px var(--success); }
+    #conn-dot.disconnected { background: var(--danger);  box-shadow: 0 0 8px var(--danger); }
+
+    /* ─── Error toast ───────────────────────────────────────────────────────── */
+    #error-toast {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+      background: rgba(248,113,113,0.15);
+      border: 1px solid rgba(248,113,113,0.4);
+      color: var(--danger);
+      padding: 12px 28px; border-radius: 12px;
+      font-size: 1rem; font-weight: 700;
+      z-index: 200; pointer-events: none;
+      opacity: 0; transition: opacity 0.3s;
+      white-space: nowrap;
+    }
+    #error-toast.visible { opacity: 1; }
+
+    /* ─── Utility ───────────────────────────────────────────────────────────── */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- ══ STARFIELD ════════════════════════════════════════════════════════════ -->
+<div id="starfield"></div>
+
+<!-- ══ CONNECTION PILL ══════════════════════════════════════════════════════ -->
+<div id="connection-pill">
+  <div id="conn-dot"></div>
+  <span id="conn-label">Connecting…</span>
+</div>
+
+<!-- ══ ERROR TOAST ══════════════════════════════════════════════════════════ -->
+<div id="error-toast"></div>
+
+<!-- ══ APP SHELL ════════════════════════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- ── SCREEN 1: Code Entry ─────────────────────────────────────────── -->
+  <div id="screen-entry" class="screen active">
+    <div class="logo grad-text">🎤 PresentIt</div>
+    <div class="glass card" id="entry-card">
+      <h1>Join a Room</h1>
+      <p>Enter the room code shown on the display screen</p>
+      <input id="entry-code" class="input" type="text" maxlength="6"
+             placeholder="e.g. WQRZ" autocomplete="off" spellcheck="false" />
+      <button class="btn" id="entry-btn">Connect Display →</button>
+      <div id="entry-error"></div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 2: Lobby ──────────────────────────────────────────────── -->
+  <div id="screen-lobby" class="screen">
+    <!-- Left -->
+    <div class="lobby-left">
+      <div class="lobby-label">Room Code</div>
+      <div id="lobby-room-code">XXXX</div>
+      <div class="lobby-join-url">Join at <span id="lobby-url-host">—</span></div>
+
+      <div class="lobby-players-card glass">
+        <div class="lobby-players-icon">👥</div>
+        <div>
+          <div class="lobby-players-count" id="lobby-player-count">0</div>
+          <div class="lobby-players-label">Players joined</div>
+        </div>
+      </div>
+
+      <div id="lobby-presenter-badge" class="lobby-presenter-badge hidden">
+        <div class="lobby-presenter-dot"></div>
+        <span>Presenter: <strong id="lobby-presenter-name">—</strong></span>
+      </div>
+
+      <div class="lobby-waiting">
+        Waiting for host to start
+        <div class="waiting-dots">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: QR -->
+    <div class="lobby-right">
+      <div class="qr-wrapper">
+        <div id="qrcode"></div>
+      </div>
+      <div class="qr-label">📷 Scan to join</div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 3: Predefined Slide ──────────────────────────────────── -->
+  <div id="screen-predefined" class="screen">
+    <div class="slide-badge-row">
+      <div class="slide-num-badge" id="pred-slide-num">Slide 1</div>
+      <div class="type-badge info">INFO</div>
+    </div>
+    <div id="predefined-text">Slide content goes here</div>
+  </div>
+
+  <!-- ── SCREEN 3B: Live Presentation View (Black background, White text) ── -->
+  <div id="screen-presenter-live" class="screen" style="background:#000000;color:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4vw;text-align:center;width:100vw;height:100vh;">
+    <div id="pl-image-wrap" style="margin-bottom:2vh;display:none;max-width:90vw;max-height:75vh;">
+      <img id="pl-image" src="" style="max-width:90vw;max-height:75vh;object-fit:contain;border-radius:12px;" />
+    </div>
+    <div id="pl-text" style="font-size:5vw;font-weight:900;color:#ffffff;line-height:1.3;max-width:90vw;white-space:pre-wrap;"></div>
+  </div>
+
+  <!-- ── SCREEN 4: Voting Slide ───────────────────────────────────────── -->
+  <div id="screen-voting" class="screen">
+    <div class="slide-badge-row">
+      <div class="slide-num-badge" id="vote-slide-num">Slide 1</div>
+      <div class="type-badge vote">VOTE</div>
+    </div>
+    <div id="voting-question">Question goes here?</div>
+    <div id="voting-options"></div>
+
+    <!-- Fixed bottom bar -->
+    <div id="vote-bar-wrap">
+      <div class="vote-bar-info">
+        <div class="vote-bar-label">🗳️ Votes</div>
+        <div class="vote-bar-count"><span id="vote-current">0</span> / <span id="vote-total">0</span> voted</div>
+      </div>
+      <div class="vote-track"><div class="vote-fill" id="vote-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 5: Vote Results ───────────────────────────────────────── -->
+  <div id="screen-results" class="screen">
+    <div class="slide-badge-row">
+      <div class="slide-num-badge" id="res-slide-num">Slide 1</div>
+      <div class="type-badge vote">RESULTS</div>
+    </div>
+    <div id="results-question">Question</div>
+    <div id="results-options"></div>
+    <div class="results-continue">⌛ Waiting for presenter to continue…</div>
+  </div>
+
+  <!-- ── SCREEN 6: Rating ─────────────────────────────────────────────── -->
+  <div id="screen-rating" class="screen">
+    <div class="rating-stars-bg" id="rating-stars-bg"></div>
+    <div class="rating-main-icon">⭐</div>
+    <div class="rating-title">Rate the Presenter!</div>
+    <div class="rating-presenter">Presenting: <span id="rating-presenter-name">—</span></div>
+    <div class="rating-instruction">
+      <span class="phone-emoji">📱</span> Check your phone to vote
+    </div>
+    <div class="glass rating-progress-card">
+      <div>
+        <div class="rating-prog-num"><span id="rating-current">0</span>/<span id="rating-total">0</span></div>
+        <div class="rating-prog-label">Ratings received</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 7: Final Results ──────────────────────────────────────── -->
+  <div id="screen-final" class="screen">
+    <div class="confetti-container" id="confetti-container"></div>
+    <div class="final-thanks">Thanks for playing</div>
+    <div class="final-presenter-name" id="final-presenter-name">Presenter</div>
+    <div class="glass final-score-card">
+      <div class="final-score-label">Average Score</div>
+      <div class="final-score-num" id="final-score-num">0.0</div>
+      <div class="final-score-max">out of 5.0</div>
+    </div>
+    <div class="final-stars" id="final-stars">☆☆☆☆☆</div>
+    <div class="final-ratings-list" id="final-ratings-list"></div>
+    <div class="final-tagline">🎤 PresentIt — Make every slide count!</div>
+  </div>
+
+</div><!-- /#app -->
+
+<script>
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   UTILS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const LETTERS = ['A','B','C','D','E','F','G','H'];
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+function showError(msg, dur = 4000) {
+  const t = document.getElementById('error-toast');
+  t.textContent = msg;
+  t.classList.add('visible');
+  setTimeout(() => t.classList.remove('visible'), dur);
+}
+
+function setConnState(state) {
+  // state: 'connecting' | 'connected' | 'disconnected'
+  const dot   = document.getElementById('conn-dot');
+  const label = document.getElementById('conn-label');
+  dot.className = state;
+  label.textContent = state === 'connected'    ? 'Connected'
+                    : state === 'disconnected' ? 'Disconnected'
+                    : 'Connecting…';
+}
+
+/* Star fill */
+(function buildStars() {
+  const sf = document.getElementById('starfield');
+  for (let i = 0; i < 120; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2.5 + 0.5;
+    s.style.cssText = [
+      `width:${size}px`, `height:${size}px`,
+      `left:${Math.random()*100}%`, `top:${Math.random()*100}%`,
+      `--dur:${(Math.random()*4+2).toFixed(1)}s`,
+      `--delay:${(Math.random()*4).toFixed(1)}s`,
+    ].join(';');
+    sf.appendChild(s);
+  }
+})();
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   FLOATING STARS (rating screen)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function buildFloatStars() {
+  const bg = document.getElementById('rating-stars-bg');
+  bg.innerHTML = '';
+  for (let i = 0; i < 18; i++) {
+    const s = document.createElement('div');
+    s.className = 'float-star';
+    s.textContent = '⭐';
+    s.style.cssText = [
+      `left:${Math.random()*100}%`,
+      `--dur:${(Math.random()*6+5).toFixed(1)}s`,
+      `--delay:${(Math.random()*6).toFixed(1)}s`,
+    ].join(';');
+    bg.appendChild(s);
+  }
+}
+buildFloatStars();
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   CONFETTI (final screen)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const CONFETTI_COLORS = [
+  '#667eea','#764ba2','#f093fb','#f5576c',
+  '#4ade80','#fbbf24','#38bdf8','#fb7185',
+];
+function buildConfetti() {
+  const c = document.getElementById('confetti-container');
+  c.innerHTML = '';
+  for (let i = 0; i < 80; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    const color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+    p.style.cssText = [
+      `left:${Math.random()*100}%`,
+      `background:${color}`,
+      `--dur:${(Math.random()*3+2.5).toFixed(1)}s`,
+      `--delay:${(Math.random()*4).toFixed(1)}s`,
+      `width:${Math.random()*8+6}px`,
+      `height:${Math.random()*10+8}px`,
+      `border-radius:${Math.random()>0.5?'50%':'2px'}`,
+    ].join(';');
+    c.appendChild(p);
+  }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   STAR DISPLAY HELPER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function renderStars(avg, max = 5) {
+  let s = '';
+  for (let i = 1; i <= max; i++) {
+    s += i <= Math.round(avg) ? '⭐' : '☆';
+  }
+  return s;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SCORE COUNT-UP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function animateCount(el, target, duration = 1600, decimals = 1) {
+  const start   = performance.now();
+  const startVal = 0;
+  function step(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 4);
+    const val  = startVal + (target - startVal) * ease;
+    el.textContent = val.toFixed(decimals);
+    if (t < 1) requestAnimationFrame(step);
+    else el.textContent = target.toFixed(decimals);
+  }
+  requestAnimationFrame(step);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   QR CODE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+let qrGenerated = false;
+function generateQR(url) {
+  if (qrGenerated) return;
+  qrGenerated = true;
+  const el = document.getElementById('qrcode');
+  el.innerHTML = '';
+  new QRCode(el, {
+    text: url,
+    width: 200,
+    height: 200,
+    colorDark: '#07071a',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M,
+  });
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   OPTION GRID HELPERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function optionCols(count) {
+  if (count <= 2) return 2;
+  if (count <= 4) return 2;
+  return 3;
+}
+
+function buildTextOption(opt, idx) {
+  const card = document.createElement('div');
+  card.className = 'option-card';
+  card.style.animationDelay = `${idx * 0.08}s`;
+  card.innerHTML = `
+    <div class="option-letter">${LETTERS[idx]}</div>
+    <div class="option-text">${escHtml(opt.text || opt)}</div>
+  `;
+  return card;
+}
+
+function buildPhotoOption(opt, idx) {
+  const card = document.createElement('div');
+  card.className = 'option-card photo-card';
+  card.style.animationDelay = `${idx * 0.08}s`;
+  const imgUrl = typeof opt === 'object' ? (opt.image_url || opt.imageUrl || opt.image || '') : '';
+  const label = typeof opt === 'string' ? opt : (opt.caption || opt.text || opt.label || '');
+  card.innerHTML = `
+    <div class="option-letter">${LETTERS[idx]}</div>
+    ${imgUrl ? `<div class="option-img-wrap"><img src="${escAttr(imgUrl)}" alt="Option ${LETTERS[idx]}" loading="lazy" /></div>` : ''}
+    <div class="option-text">${escHtml(label)}</div>
+  `;
+  return card;
+}
+
+function buildTextOption(opt, idx) {
+  const card = document.createElement('div');
+  card.className = 'option-card';
+  card.style.animationDelay = `${idx * 0.08}s`;
+  const label = typeof opt === 'string' ? opt : (opt.caption || opt.text || opt.label || '');
+  card.innerHTML = `
+    <div class="option-letter">${LETTERS[idx]}</div>
+    <div class="option-text">${escHtml(label)}</div>
+  `;
+  return card;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SOCKET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function connectSocket(code) {
+  roomCode = code.toUpperCase().trim();
+  if (socket) socket.disconnect();
+
+  socket = io({ transports: ['websocket','polling'] });
+
+  socket.on('connect', () => {
+    setConnState('connected');
+    socket.emit('display:join_room', { roomCode });
+  });
+
+  socket.on('disconnect', () => setConnState('disconnected'));
+  socket.on('connect_error', () => setConnState('disconnected'));
+
+  socket.on('display:joined', (data) => {
+    if (data && data.players) playerCount = data.players.length;
+    renderLobby();
+    showScreen('screen-lobby');
+  });
+
+  socket.on('room:update', (data) => {
+    if (data && data.players) playerCount = data.players.length;
+    document.getElementById('lobby-player-count').textContent = playerCount;
+  });
+
+  socket.on('game:slide', (slide) => {
+    currentSlide = slide;
+    const type = (slide.slideType || slide.type || '').toLowerCase();
+    if (type === 'predefined') {
+      renderPredefinedSlide(slide);
+    } else {
+      renderVotingSlide(slide);
+    }
+  });
+
+  socket.on('game:vote_progress', (data) => {
+    updateVoteBar(data.votesIn, data.votersTotal);
+  });
+
+  socket.on('game:vote_results', (data) => {
+    renderVoteResults(data);
+  });
+
+  socket.on('game:presenter_slide', (data) => {
+    renderPresenterLiveSlide(data);
+  });
+
+  socket.on('game:rating', (data) => {
+    showScreen('screen-rating');
+  });
+
+  socket.on('game:results', (data) => {
+    renderFinalResults(data);
+  });
+}
+
+function renderPresenterLiveSlide(data) {
+  const slide = data.slide || {};
+  const textEl = document.getElementById('pl-text');
+  const imgWrap = document.getElementById('pl-image-wrap');
+  const imgEl = document.getElementById('pl-image');
+
+  const st = (slide.slideType || '').toLowerCase();
+
+  imgWrap.style.display = 'none';
+  textEl.style.display = 'block';
+  textEl.textContent = '';
+
+  if (st === 'photo_only') {
+    if (slide.imageUrl) {
+      imgEl.src = slide.imageUrl;
+      imgEl.style.width = '95vw';
+      imgEl.style.height = '92vh';
+      imgEl.style.objectFit = 'contain';
+      imgWrap.style.maxWidth = '95vw';
+      imgWrap.style.maxHeight = '92vh';
+      imgWrap.style.margin = '0 auto';
+      imgWrap.style.display = 'block';
+      textEl.style.display = 'none';
+    }
+  } else if (st === 'photo_and_text') {
+    if (slide.imageUrl) {
+      imgEl.src = slide.imageUrl;
+      imgEl.style.width = '90vw';
+      imgEl.style.height = '65vh';
+      imgEl.style.objectFit = 'contain';
+      imgWrap.style.maxWidth = '90vw';
+      imgWrap.style.maxHeight = '65vh';
+      imgWrap.style.marginBottom = '2vh';
+      imgWrap.style.display = 'block';
+    }
+    textEl.style.fontSize = '3.5vw';
+    textEl.textContent = slide.contentText || slide.question || '';
+  } else if (st === 'prompt') {
+    textEl.style.fontSize = '5vw';
+    textEl.textContent = slide.question || '';
+  } else {
+    // answer_only or predefined
+    if (slide.imageUrl) {
+      imgEl.src = slide.imageUrl;
+      imgEl.style.width = '90vw';
+      imgEl.style.height = '65vh';
+      imgEl.style.objectFit = 'contain';
+      imgWrap.style.maxWidth = '90vw';
+      imgWrap.style.maxHeight = '65vh';
+      imgWrap.style.marginBottom = '2vh';
+      imgWrap.style.display = 'block';
+    }
+    textEl.style.fontSize = '5vw';
+    textEl.textContent = slide.contentText || slide.question || '';
+  }
+
+  showScreen('screen-presenter-live');
+}
+
+function renderVotingSlide(slide) {
+  const slideNum = (slide.index !== undefined) ? slide.index + 1 : 1;
+  document.getElementById('vote-slide-num').textContent = `Slide ${slideNum}`;
+  document.getElementById('voting-question').textContent = slide.question || '';
+
+  const opts = slide.options || [];
+  const type = (slide.slideType || slide.type || '').toLowerCase();
+  const container = document.getElementById('voting-options');
+  container.innerHTML = '';
+
+  const cols = optionCols(opts.length);
+  container.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+  opts.forEach((opt, i) => {
+    let card;
+    if (type.includes('photo')) {
+      card = buildPhotoOption(opt, i);
+    } else {
+      card = buildTextOption(opt, i);
+    }
+    container.appendChild(card);
+  });
+
+  updateVoteBar(0, slide.votersTotal || 0);
+  showScreen('screen-voting');
+}
+
+  // Reset vote bar
+  updateVoteBar(0, slide.totalPlayers ?? playerCount);
+  showScreen('screen-voting');
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   VOTE BAR UPDATE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function updateVoteBar(current, total) {
+  document.getElementById('vote-current').textContent = current ?? 0;
+  document.getElementById('vote-total').textContent   = total   ?? 0;
+  const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+  document.getElementById('vote-fill').style.width = pct + '%';
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RENDER: VOTE RESULTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function renderVoteResults(data) {
+  // data: { question, options: [{text, votes, imageUrl?}], totalVotes }
+  document.getElementById('res-slide-num').textContent = `Slide ${data.index ?? data.number ?? 1}`;
+  document.getElementById('results-question').textContent = data.question || '';
+
+  const opts  = data.options || [];
+  const total = data.totalVotes ?? opts.reduce((s,o) => s + (o.votes||0), 0);
+  const maxV  = Math.max(...opts.map(o => o.votes || 0), 1);
+
+  const container = document.getElementById('results-options');
+  container.innerHTML = '';
+
+  opts.forEach((opt, i) => {
+    const votes   = opt.votes   || 0;
+    const pct     = total > 0 ? Math.round((votes / total) * 100) : 0;
+    const isWinner = (votes === maxV && maxV > 0);
+
+    const row = document.createElement('div');
+    row.className = 'result-row' + (isWinner ? ' winner' : '');
+    row.style.animationDelay = `${i * 0.1}s`;
+    row.innerHTML = `
+      <div class="result-letter ${isWinner ? 'result-winner-letter' : ''}">${LETTERS[i]}</div>
+      <div class="result-meta">
+        <div class="result-label">${escHtml(opt.text || opt.caption || '')}</div>
+        <div class="result-bar-track">
+          <div class="result-bar-fill ${isWinner ? 'result-winner-fill' : ''}" data-pct="${pct}" style="width:0%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="result-pct ${isWinner ? 'grad-text-gold' : 'grad-text'}">${pct}%</div>
+        <div class="result-votes">${votes} vote${votes !== 1 ? 's' : ''}</div>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+
+  showScreen('screen-results');
+
+  // Animate bars after a brief delay
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      container.querySelectorAll('.result-bar-fill').forEach(bar => {
+        bar.style.width = bar.dataset.pct + '%';
+      });
+    }, 200);
+  });
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RENDER: RATING SCREEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function renderRatingScreen(data) {
+  const name = data.presenterName || presenterName || '—';
+  document.getElementById('rating-presenter-name').textContent = name;
+  document.getElementById('rating-current').textContent = data.rated ?? data.count ?? 0;
+  document.getElementById('rating-total').textContent   = data.total ?? playerCount;
+  buildFloatStars();
+  showScreen('screen-rating');
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RENDER: FINAL RESULTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function renderFinalResults(data) {
+  // data: { presenterName, averageScore, ratings: [{player, score}] }
+  const name  = data.presenterName || presenterName || 'Presenter';
+  const avg   = parseFloat(data.averageScore ?? data.average ?? 0);
+  const ratings = data.ratings || [];
+
+  document.getElementById('final-presenter-name').textContent = name;
+  document.getElementById('final-stars').textContent = renderStars(avg);
+
+  // Build confetti
+  buildConfetti();
+
+  // Animate score number
+  showScreen('screen-final');
+  setTimeout(() => {
+    animateCount(document.getElementById('final-score-num'), avg, 1800, 1);
+  }, 400);
+
+  // Render rating chips
+  const list = document.getElementById('final-ratings-list');
+  list.innerHTML = '';
+  ratings.forEach((r, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'rating-chip';
+    chip.style.animationDelay = `${0.3 + i * 0.07}s`;
+    chip.innerHTML = `
+      <span>${escHtml(r.player || r.name || `Player ${i+1}`)}</span>
+      <span>${renderStars(r.score || r.rating || 0)}</span>
+    `;
+    list.appendChild(chip);
+  });
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ENTRY FORM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+document.getElementById('entry-btn').addEventListener('click', () => {
+  const code = document.getElementById('entry-code').value.trim().toUpperCase();
+  const errEl = document.getElementById('entry-error');
+  errEl.textContent = '';
+  if (!code || code.length < 3) {
+    errEl.textContent = 'Please enter a valid room code.';
+    return;
+  }
+  connectSocket(code);
+  // Optimistically show lobby while socket connects
+  document.getElementById('lobby-room-code').textContent = code;
+  const origin = window.location.origin;
+  document.getElementById('lobby-url-host').textContent = `${origin}/play`.replace(/^https?:\/\//,'');
+  generateQR(`${origin}/play?code=${code}`);
+  showScreen('screen-lobby');
+});
+
+document.getElementById('entry-code').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('entry-btn').click();
+});
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   AUTO-JOIN FROM URL PARAM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+(function init() {
+  const params = new URLSearchParams(window.location.search);
+  const code   = params.get('code');
+  if (code && code.trim().length >= 3) {
+    connectSocket(code.trim().toUpperCase());
+    // Show lobby immediately while we wait for socket
+    document.getElementById('lobby-room-code').textContent = code.toUpperCase();
+    const origin = window.location.origin;
+    document.getElementById('lobby-url-host').textContent = `${origin}/play`.replace(/^https?:\/\//,'');
+    generateQR(`${origin}/play?code=${code.toUpperCase()}`);
+    showScreen('screen-lobby');
+  } else {
+    showScreen('screen-entry');
+  }
+})();
+</script>
+</body>
+</html>

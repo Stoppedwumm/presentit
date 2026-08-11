@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  presentit:
+    build: .
+    container_name: presentit_app
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - ADMIN_PASSWORD=PresentIt2026Secure!
+      # Site Lock Mode (Basic Auth for present.stoppedwumm.net)
+      - SITE_LOCKED=true
+      - AUTH_USER=admin
+      - AUTH_PASS=stoppedwumm2026!
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+    restart: unless-stopped
