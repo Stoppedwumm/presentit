@@ -913,7 +913,7 @@
   <div id="screen-rating" class="screen">
     <div class="text-center mb-20">
       <div style="font-size:40px; margin-bottom:8px;">⭐</div>
-      <h2 class="mb-8">Rate the Presenter!</h2>
+      <h2 class="mb-8" data-i18n="rate_presenter">Rate the Presenter!</h2>
       <p class="text-muted text-sm" id="rating-presenter-name" style="font-size:15px; font-weight:700; color:var(--text);">—</p>
     </div>
 
@@ -928,13 +928,13 @@
     <div class="text-center text-muted text-sm mb-16" id="rating-selected-text" style="min-height:20px;"></div>
 
     <button class="btn btn-primary" id="rating-submit-btn" onclick="submitRating()" disabled>
-      Submit Rating
+      <span data-i18n="submit_rating">Submit Rating</span>
     </button>
 
     <div id="rating-done-msg" class="voted-confirm mt-20" style="display:none;">
       <span class="check">⭐</span>
-      <h3>Rated!</h3>
-      <p>Waiting for everyone else to rate...</p>
+      <h3 data-i18n="voted">Rated!</h3>
+      <p data-i18n="thanks_for_rating">Waiting for everyone else to rate...</p>
     </div>
   </div>
 
@@ -944,9 +944,9 @@
   <div id="screen-suspense" class="screen">
     <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
       <div style="font-size:64px; margin-bottom:16px;">😰</div>
-      <h2 class="mb-8">Hold Tight!</h2>
-      <p class="text-muted mb-4">The audience is judging you...</p>
-      <p class="text-muted text-sm">No pressure 😬</p>
+      <h2 class="mb-8" data-i18n="hold_tight">Hold Tight!</h2>
+      <p class="text-muted mb-4" data-i18n="audience_judging">The audience is judging you...</p>
+      <p class="text-muted text-sm" data-i18n="no_pressure">No pressure 😬</p>
 
       <div class="suspense-orbs mt-24">
         <div class="suspense-orb"></div>
@@ -962,7 +962,7 @@
   <!-- ══════════════════════════════════════════════════ -->
   <div id="screen-final" class="screen">
     <div class="text-center mb-8">
-      <div class="badge badge-presenter mb-12" style="display:inline-flex;">🏆 Final Score</div>
+      <div class="badge badge-presenter mb-12" style="display:inline-flex;" data-i18n="final_score">🏆 Final Score</div>
       <h2 id="final-presenter-name">Results</h2>
     </div>
 
@@ -981,7 +981,7 @@
     <div class="divider"></div>
 
     <div class="scroll-inner">
-      <div class="text-muted text-sm mb-12 text-center">Individual Ratings</div>
+      <div class="text-muted text-sm mb-12 text-center" data-i18n="individual_ratings">Individual Ratings</div>
       <div class="ratings-list" id="final-ratings-list"></div>
     </div>
   </div>
@@ -1474,17 +1474,17 @@ function showFinalResults(ratings, average, presenterName) {
 
   const score = average || 0;
   let verdict = '😐';
-  if (score >= 9) verdict = '🏆 Legendary!';
-  else if (score >= 7) verdict = '🔥 On Fire!';
-  else if (score >= 5) verdict = '👏 Solid!';
-  else if (score >= 3) verdict = '😅 Tried hard!';
-  else verdict = '💀 Rough one...';
+  if (score >= 9) verdict = typeof getTranslation === 'function' ? getTranslation('legendary') : '🏆 Legendary!';
+  else if (score >= 7) verdict = typeof getTranslation === 'function' ? getTranslation('masterpiece') : '⭐ Masterpiece!';
+  else if (score >= 5) verdict = typeof getTranslation === 'function' ? getTranslation('not_bad') : '👍 Not bad!';
+  else if (score >= 3) verdict = typeof getTranslation === 'function' ? getTranslation('tried_hard') : '😅 Tried hard!';
+  else verdict = typeof getTranslation === 'function' ? getTranslation('rough_one') : '💀 Rough one...';
 
   document.getElementById('final-verdict').textContent = verdict;
   document.getElementById('final-subtitle').textContent =
     state.role === 'presenter'
-      ? 'Your final score from the audience'
-      : `Average score for ${presenterName}`;
+      ? (typeof getTranslation === 'function' ? getTranslation('your_final_score') : 'Your final score from the audience')
+      : `${typeof getTranslation === 'function' ? getTranslation('avg_score_for') : 'Average score for'} ${presenterName}`;
 
   // Individual ratings
   const list = document.getElementById('final-ratings-list');
