@@ -177,10 +177,10 @@
   <div class="modal-overlay" id="authModal">
     <div class="modal-box card">
       <div style="font-size:40px;margin-bottom:12px;">🔒</div>
-      <h2 style="font-weight:900;margin-bottom:8px;">Admin Access</h2>
-      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">Enter the Admin PIN to manage presentation templates.</p>
-      <input type="password" id="pinInput" placeholder="Default: presentit123" />
-      <button class="btn btn-hot" style="width:100%;" id="btnAuth">Unlock Admin</button>
+      <h2 style="font-weight:900;margin-bottom:8px;" data-i18n="admin_access">Admin Access</h2>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;" data-i18n="admin_pin_sub">Enter the Admin PIN to manage presentation templates.</p>
+      <input type="password" id="pinInput" placeholder="Default: presentit123" data-i18n-placeholder="pin_placeholder" />
+      <button class="btn btn-hot" style="width:100%;" id="btnAuth" data-i18n="unlock_admin">Unlock Admin</button>
       <div id="authError" style="color:var(--danger);font-size:13px;margin-top:12px;"></div>
     </div>
   </div>
@@ -190,8 +190,8 @@
       <a class="logo" href="/">PresentIt Admin</a>
       <div class="nav-links">
         <div id="adminLangSelector"></div>
-        <a class="btn btn-ghost" href="/host">Host Room</a>
-        <button class="btn btn-danger btn-sm" id="btnLogout">Lock Admin</button>
+        <a class="btn btn-ghost" href="/host" data-i18n="host_room">Host Room</a>
+        <button class="btn btn-danger btn-sm" id="btnLogout" data-i18n="lock_admin">Lock Admin</button>
       </div>
     </header>
 
@@ -200,7 +200,7 @@
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
         <div>
           <h1 style="font-size:26px;font-weight:900;" data-i18n="admin_title">Presentation Templates</h1>
-          <p style="color:var(--muted);font-size:14px;">Build deck templates for audience voting & presenter yapping.</p>
+          <p style="color:var(--muted);font-size:14px;" data-i18n="admin_deck_sub">Build deck templates for audience voting & presenter yapping.</p>
         </div>
         <button class="btn btn-primary" id="btnNewTemplate" data-i18n="create_template">+ Create Template</button>
       </div>
@@ -211,25 +211,25 @@
     <!-- EDITOR VIEW -->
     <div id="viewEditor" class="hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
-        <button class="btn btn-ghost btn-sm" id="btnBack">← Back to List</button>
-        <button class="btn btn-hot" id="btnSaveTemplate">Save Template</button>
+        <button class="btn btn-ghost btn-sm" id="btnBack" data-i18n="back_to_list">← Back to List</button>
+        <button class="btn btn-hot" id="btnSaveTemplate" data-i18n="save_template">Save Template</button>
       </div>
 
       <div class="card">
-        <label>Template Name</label>
-        <input type="text" id="tplName" placeholder="e.g. Crazy Tech Keynote" />
+        <label data-i18n="template_name">Template Name</label>
+        <input type="text" id="tplName" placeholder="e.g. Crazy Tech Keynote" data-i18n-placeholder="tpl_name_placeholder" />
 
-        <label>Description</label>
-        <input type="text" id="tplDesc" placeholder="e.g. Absurd prompts for office parties" />
+        <label data-i18n="template_desc">Description</label>
+        <input type="text" id="tplDesc" placeholder="e.g. Absurd prompts for office parties" data-i18n-placeholder="tpl_desc_placeholder" />
       </div>
 
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <h2 style="font-size:20px;font-weight:800;">Slides</h2>
+        <h2 style="font-size:20px;font-weight:800;" data-i18n="slides_title">Slides</h2>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-ghost btn-sm" onclick="addSlide('text_options')">+ Only Text</button>
-          <button class="btn btn-ghost btn-sm" onclick="addSlide('photo_options')">+ Only Photos</button>
-          <button class="btn btn-ghost btn-sm" onclick="addSlide('photo_and_text')">+ Text with Photo</button>
-          <button class="btn btn-ghost btn-sm" onclick="addSlide('predefined')">+ Predefined Text</button>
+          <button class="btn btn-ghost btn-sm" onclick="addSlide('text_options')" data-i18n="add_only_text">+ Only Text</button>
+          <button class="btn btn-ghost btn-sm" onclick="addSlide('photo_options')" data-i18n="add_only_photos">+ Only Photos</button>
+          <button class="btn btn-ghost btn-sm" onclick="addSlide('photo_and_text')" data-i18n="add_text_photo">+ Text with Photo</button>
+          <button class="btn btn-ghost btn-sm" onclick="addSlide('predefined')" data-i18n="add_predefined">+ Predefined Text</button>
         </div>
       </div>
 
@@ -294,28 +294,34 @@
       }
     }
 
+    window.addEventListener('languageChanged', () => {
+      renderTemplateList();
+      renderSlides();
+    });
+
     function renderTemplateList() {
       const container = document.getElementById('templateList');
       container.innerHTML = '';
 
       if (!currentTemplates.length) {
-        container.innerHTML = '<div style="color:var(--muted);grid-column:1/-1;text-align:center;padding:40px;">No templates created yet. Click "+ Create Template" to start!</div>';
+        container.innerHTML = `<div style="color:var(--muted);grid-column:1/-1;text-align:center;padding:40px;">${esc(t('no_templates_yet'))}</div>`;
         return;
       }
 
-      currentTemplates.forEach(t => {
+      currentTemplates.forEach(tItem => {
         const el = document.createElement('div');
         el.className = 'template-card';
-        const slideCount = t.slides ? t.slides.length : 0;
+        const slideCount = tItem.slides ? tItem.slides.length : 0;
+        const slideWord = t('slide');
         el.innerHTML = `
           <div>
-            <h3>${esc(t.name)}</h3>
-            <p>${esc(t.description || 'No description')}</p>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">📊 ${slideCount} slide${slideCount !== 1 ? 's' : ''}</div>
+            <h3>${esc(tItem.name)}</h3>
+            <p>${esc(tItem.description || '')}</p>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">📊 ${slideCount} ${slideWord}${slideCount !== 1 ? 's' : ''}</div>
           </div>
           <div class="actions">
-            <button class="btn btn-ghost btn-sm" onclick="editTemplate('${t.id}')">Edit</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteTemplate('${t.id}')">Delete</button>
+            <button class="btn btn-ghost btn-sm" onclick="editTemplate('${tItem.id}')">${esc(t('edit'))}</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteTemplate('${tItem.id}')">${esc(t('delete'))}</button>
           </div>
         `;
         container.appendChild(el);
@@ -335,12 +341,12 @@
     });
 
     function editTemplate(id) {
-      const t = currentTemplates.find(item => item.id === id);
-      if (!t) return;
-      editingTemplateId = t.id;
-      document.getElementById('tplName').value = t.name;
-      document.getElementById('tplDesc').value = t.description || '';
-      currentSlides = JSON.parse(JSON.stringify(t.slides || []));
+      const tItem = currentTemplates.find(item => item.id === id);
+      if (!tItem) return;
+      editingTemplateId = tItem.id;
+      document.getElementById('tplName').value = tItem.name;
+      document.getElementById('tplDesc').value = tItem.description || '';
+      currentSlides = JSON.parse(JSON.stringify(tItem.slides || []));
       renderSlides();
       showView('Editor');
     }
@@ -399,18 +405,18 @@
         div.className = 'slide-item';
 
         let typeBadge = '';
-        if (s.slide_type === 'text_options') typeBadge = '<span class="badge-type badge-text">Only Text</span>';
-        if (s.slide_type === 'photo_options') typeBadge = '<span class="badge-type badge-photo">Only Photos</span>';
-        if (s.slide_type === 'photo_and_text') typeBadge = '<span class="badge-type badge-textphoto">Text with Photo</span>';
-        if (s.slide_type === 'predefined') typeBadge = '<span class="badge-type badge-predefined">Predefined Text</span>';
+        if (s.slide_type === 'text_options') typeBadge = `<span class="badge-type badge-text">${esc(t('add_only_text').replace('+ ',''))}</span>`;
+        if (s.slide_type === 'photo_options') typeBadge = `<span class="badge-type badge-photo">${esc(t('add_only_photos').replace('+ ',''))}</span>`;
+        if (s.slide_type === 'photo_and_text') typeBadge = `<span class="badge-type badge-textphoto">${esc(t('add_text_photo').replace('+ ',''))}</span>`;
+        if (s.slide_type === 'predefined') typeBadge = `<span class="badge-type badge-predefined">${esc(t('add_predefined').replace('+ ',''))}</span>`;
 
         div.innerHTML = `
           <div class="slide-header">
-            <span class="slide-number">Slide ${idx + 1} — ${typeBadge}</span>
-            <button class="btn btn-danger btn-sm" onclick="removeSlide(${idx})">Delete Slide</button>
+            <span class="slide-number">${esc(t('slide'))} ${idx + 1} — ${typeBadge}</span>
+            <button class="btn btn-danger btn-sm" onclick="removeSlide(${idx})">${esc(t('delete_slide'))}</button>
           </div>
-          <label>Question / Title Prompt</label>
-          <input type="text" value="${esc(s.question || '')}" onchange="currentSlides[${idx}].question = this.value" placeholder="Enter prompt..." />
+          <label>${esc(t('prompt_title_label'))}</label>
+          <input type="text" value="${esc(s.question || '')}" onchange="currentSlides[${idx}].question = this.value" placeholder="${esc(t('enter_prompt_placeholder'))}" />
           <div id="slideContent_${idx}"></div>
         `;
 
@@ -420,46 +426,46 @@
 
         if (s.slide_type === 'text_options') {
           contentEl.innerHTML = `
-            <label>Text Options (Audience Votes One)</label>
+            <label>${esc(t('text_options_label'))}</label>
             ${(s.options || []).map((opt, oIdx) => `
               <div class="option-row">
                 <input type="text" value="${esc(opt)}" onchange="currentSlides[${idx}].options[${oIdx}] = this.value" placeholder="Option ${oIdx+1}" />
                 <button class="btn btn-ghost btn-sm" onclick="currentSlides[${idx}].options.splice(${oIdx},1); renderSlides();">X</button>
               </div>
             `).join('')}
-            <button class="btn btn-ghost btn-sm" onclick="currentSlides[${idx}].options.push('New Option'); renderSlides();">+ Add Option</button>
+            <button class="btn btn-ghost btn-sm" onclick="currentSlides[${idx}].options.push('New Option'); renderSlides();">${esc(t('add_option'))}</button>
           `;
         } else if (s.slide_type === 'photo_options') {
           contentEl.innerHTML = `
-            <label>Photo Options (Audience Votes One)</label>
+            <label>${esc(t('photo_options_label'))}</label>
             ${(s.options || []).map((opt, oIdx) => `
               <div class="option-row">
                 <img class="img-preview" src="${opt.image_url || ''}" />
-                <input type="text" value="${esc(opt.caption || '')}" onchange="currentSlides[${idx}].options[${oIdx}].caption = this.value" placeholder="Caption" />
+                <input type="text" value="${esc(opt.caption || '')}" onchange="currentSlides[${idx}].options[${oIdx}].caption = this.value" placeholder="${esc(t('caption_placeholder'))}" />
                 <input type="file" accept="image/*" onchange="uploadImage(this, ${idx}, ${oIdx})" />
-                <button class="btn btn-ghost btn-sm" onclick="uploadImageFromUrl(${idx}, ${oIdx})">🔗 Import URL</button>
+                <button class="btn btn-ghost btn-sm" onclick="uploadImageFromUrl(${idx}, ${oIdx})">${esc(t('import_url'))}</button>
                 <button class="btn btn-ghost btn-sm" onclick="currentSlides[${idx}].options.splice(${oIdx},1); renderSlides();">X</button>
               </div>
             `).join('')}
-            <button class="btn btn-ghost btn-sm" onclick="currentSlides[${idx}].options.push({id: Date.now().toString(), caption:'New Photo', image_url:''}); renderSlides();">+ Add Photo Option</button>
+            <button class="btn btn-ghost btn-sm" onclick="currentSlides[${idx}].options.push({id: Date.now().toString(), caption:'New Photo', image_url:''}); renderSlides();">${esc(t('add_photo_option'))}</button>
           `;
         } else if (s.slide_type === 'photo_and_text') {
           contentEl.innerHTML = `
-            <label>Text with Photo Options (Audience Votes One)</label>
+            <label>${esc(t('photo_text_options_label'))}</label>
             ${(s.options || []).map((opt, oIdx) => `
               <div class="option-row">
                 <img class="img-preview" src="${opt.image_url || ''}" />
-                <input type="text" value="${esc(opt.caption || opt.text || '')}" onchange="currentSlides[${idx}].options[${oIdx}].caption = this.value; currentSlides[${idx}].options[${oIdx}].text = this.value;" placeholder="Explanation / Text Caption" />
+                <input type="text" value="${esc(opt.caption || opt.text || '')}" onchange="currentSlides[${idx}].options[${oIdx}].caption = this.value; currentSlides[${idx}].options[${oIdx}].text = this.value;" placeholder="${esc(t('caption_placeholder'))}" />
                 <input type="file" accept="image/*" onchange="uploadImage(this, ${idx}, ${oIdx})" />
-                <button class="btn btn-ghost btn-sm" onclick="uploadImageFromUrl(${idx}, ${oIdx})">🔗 Import URL</button>
+                <button class="btn btn-ghost btn-sm" onclick="uploadImageFromUrl(${idx}, ${oIdx})">${esc(t('import_url'))}</button>
                 <button class="btn btn-ghost btn-sm" onclick="currentSlides[${idx}].options.splice(${oIdx},1); renderSlides();">X</button>
               </div>
             `).join('')}
-            <button class="btn btn-ghost btn-sm" onclick="if(!currentSlides[${idx}].options) currentSlides[${idx}].options=[]; currentSlides[${idx}].options.push({id: Date.now().toString(), caption:'New Text Option', image_url:''}); renderSlides();">+ Add Photo + Text Option</button>
+            <button class="btn btn-ghost btn-sm" onclick="if(!currentSlides[${idx}].options) currentSlides[${idx}].options=[]; currentSlides[${idx}].options.push({id: Date.now().toString(), caption:'New Text Option', image_url:''}); renderSlides();">${esc(t('add_photo_text_option'))}</button>
           `;
         } else if (s.slide_type === 'predefined') {
           contentEl.innerHTML = `
-            <label>Predefined Slide Content (Fixed text)</label>
+            <label>${esc(t('predefined_slide_label'))}</label>
             <textarea rows="3" onchange="currentSlides[${idx}].content_text = this.value">${esc(s.content_text || '')}</textarea>
           `;
         }

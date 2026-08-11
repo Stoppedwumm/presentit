@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="/i18n.js"></script>
   <style>
     /* ─── Reset & Base ─────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -732,10 +733,13 @@
 <!-- ══ STARFIELD ════════════════════════════════════════════════════════════ -->
 <div id="starfield"></div>
 
+<!-- ══ LANGUAGE SELECTOR ════════════════════════════════════════════════════ -->
+<div id="displayLangSelector" style="position:fixed;top:18px;left:22px;z-index:1000;"></div>
+
 <!-- ══ CONNECTION PILL ══════════════════════════════════════════════════════ -->
 <div id="connection-pill">
   <div id="conn-dot"></div>
-  <span id="conn-label">Connecting…</span>
+  <span id="conn-label" data-i18n="connecting">Connecting…</span>
 </div>
 
 <!-- ══ ERROR TOAST ══════════════════════════════════════════════════════════ -->
@@ -748,11 +752,11 @@
   <div id="screen-entry" class="screen active">
     <div class="logo grad-text">🎤 PresentIt</div>
     <div class="glass card" id="entry-card">
-      <h1>Join a Room</h1>
-      <p>Enter the room code shown on the display screen</p>
+      <h1 data-i18n="join_room_title">Join a Room</h1>
+      <p data-i18n="enter_room_code_sub">Enter the room code shown on the display screen</p>
       <input id="entry-code" class="input" type="text" maxlength="6"
-             placeholder="e.g. WQRZ" autocomplete="off" spellcheck="false" />
-      <button class="btn" id="entry-btn">Connect Display →</button>
+             placeholder="e.g. WQRZ" data-i18n-placeholder="enter_code" autocomplete="off" spellcheck="false" />
+      <button class="btn" id="entry-btn" data-i18n="connect_display">Connect Display →</button>
       <div id="entry-error"></div>
     </div>
   </div>
@@ -761,25 +765,25 @@
   <div id="screen-lobby" class="screen">
     <!-- Left -->
     <div class="lobby-left">
-      <div class="lobby-label">Room Code</div>
+      <div class="lobby-label" data-i18n="room_code">Room Code</div>
       <div id="lobby-room-code">XXXX</div>
-      <div class="lobby-join-url">Join at <span id="lobby-url-host">—</span></div>
+      <div class="lobby-join-url"><span data-i18n="players_join_at">Join at</span> <span id="lobby-url-host">—</span></div>
 
       <div class="lobby-players-card glass">
         <div class="lobby-players-icon">👥</div>
         <div>
           <div class="lobby-players-count" id="lobby-player-count">0</div>
-          <div class="lobby-players-label">Players joined</div>
+          <div class="lobby-players-label" data-i18n="players_joined">Players joined</div>
         </div>
       </div>
 
       <div id="lobby-presenter-badge" class="lobby-presenter-badge hidden">
         <div class="lobby-presenter-dot"></div>
-        <span>Presenter: <strong id="lobby-presenter-name">—</strong></span>
+        <span><span data-i18n="presenter_label">Presenter:</span> <strong id="lobby-presenter-name">—</strong></span>
       </div>
 
       <div class="lobby-waiting">
-        Waiting for host to start
+        <span data-i18n="waiting_for_host">Waiting for host to start</span>
         <div class="waiting-dots">
           <span></span><span></span><span></span>
         </div>
@@ -791,7 +795,7 @@
       <div class="qr-wrapper">
         <div id="qrcode"></div>
       </div>
-      <div class="qr-label">📷 Scan to join</div>
+      <div class="qr-label" data-i18n="scan_to_join">📷 Scan to join</div>
     </div>
   </div>
 
@@ -824,8 +828,8 @@
     <!-- Fixed bottom bar -->
     <div id="vote-bar-wrap">
       <div class="vote-bar-info">
-        <div class="vote-bar-label">🗳️ Votes</div>
-        <div class="vote-bar-count"><span id="vote-current">0</span> / <span id="vote-total">0</span> voted</div>
+        <div class="vote-bar-label">🗳️ <span data-i18n="votes">Votes</span></div>
+        <div class="vote-bar-count"><span id="vote-current">0</span> / <span id="vote-total">0</span> <span data-i18n="voted">voted</span></div>
       </div>
       <div class="vote-track"><div class="vote-fill" id="vote-fill"></div></div>
     </div>
@@ -839,22 +843,22 @@
     </div>
     <div id="results-question">Question</div>
     <div id="results-options"></div>
-    <div class="results-continue">⌛ Waiting for presenter to continue…</div>
+    <div class="results-continue" data-i18n="waiting_for_presenter">⌛ Waiting for presenter to continue…</div>
   </div>
 
   <!-- ── SCREEN 6: Rating ─────────────────────────────────────────────── -->
   <div id="screen-rating" class="screen">
     <div class="rating-stars-bg" id="rating-stars-bg"></div>
     <div class="rating-main-icon">⭐</div>
-    <div class="rating-title">Rate the Presenter!</div>
-    <div class="rating-presenter">Presenting: <span id="rating-presenter-name">—</span></div>
+    <div class="rating-title" data-i18n="rate_presenter">Rate the Presenter!</div>
+    <div class="rating-presenter"><span data-i18n="presenting_label">Presenting:</span> <span id="rating-presenter-name">—</span></div>
     <div class="rating-instruction">
-      <span class="phone-emoji">📱</span> Check your phone to vote
+      <span class="phone-emoji">📱</span> <span data-i18n="check_phone_to_vote">Check your phone to vote</span>
     </div>
     <div class="glass rating-progress-card">
       <div>
         <div class="rating-prog-num"><span id="rating-current">0</span>/<span id="rating-total">0</span></div>
-        <div class="rating-prog-label">Ratings received</div>
+        <div class="rating-prog-label" data-i18n="ratings_received">Ratings received</div>
       </div>
     </div>
   </div>
@@ -862,16 +866,16 @@
   <!-- ── SCREEN 7: Final Results ──────────────────────────────────────── -->
   <div id="screen-final" class="screen">
     <div class="confetti-container" id="confetti-container"></div>
-    <div class="final-thanks">Thanks for playing</div>
+    <div class="final-thanks" data-i18n="thanks_for_playing">Thanks for playing</div>
     <div class="final-presenter-name" id="final-presenter-name">Presenter</div>
     <div class="glass final-score-card">
-      <div class="final-score-label">Average Score</div>
+      <div class="final-score-label" data-i18n="average_rating">Average Score</div>
       <div class="final-score-num" id="final-score-num">0.0</div>
-      <div class="final-score-max">out of 5.0</div>
+      <div class="final-score-max" data-i18n="out_of_5">out of 5.0</div>
     </div>
     <div class="final-stars" id="final-stars">☆☆☆☆☆</div>
     <div class="final-ratings-list" id="final-ratings-list"></div>
-    <div class="final-tagline">🎤 PresentIt — Make every slide count!</div>
+    <div class="final-tagline" data-i18n="make_every_slide_count">🎤 PresentIt — Make every slide count!</div>
   </div>
 
 </div><!-- /#app -->
@@ -900,9 +904,8 @@ function setConnState(state) {
   const dot   = document.getElementById('conn-dot');
   const label = document.getElementById('conn-label');
   dot.className = state;
-  label.textContent = state === 'connected'    ? 'Connected'
-                    : state === 'disconnected' ? 'Disconnected'
-                    : 'Connecting…';
+  const stateKey = state === 'connected' ? 'connected' : (state === 'disconnected' ? 'disconnected' : 'connecting');
+  label.textContent = typeof t === 'function' ? t(stateKey) : (state === 'connected' ? 'Connected' : (state === 'disconnected' ? 'Disconnected' : 'Connecting…'));
 }
 
 /* Star fill */
@@ -1186,7 +1189,8 @@ function renderPresenterLiveSlide(data) {
 
 function renderVotingSlide(slide) {
   const slideNum = (slide.index !== undefined) ? slide.index + 1 : 1;
-  document.getElementById('vote-slide-num').textContent = `Slide ${slideNum}`;
+  const slideWord = typeof t === 'function' ? t('slide') : 'Slide';
+  document.getElementById('vote-slide-num').textContent = `${slideWord} ${slideNum}`;
   document.getElementById('voting-question').textContent = slide.question || '';
 
   const opts = slide.options || [];
@@ -1231,7 +1235,8 @@ function updateVoteBar(current, total) {
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 function renderVoteResults(data) {
   // data: { question, options: [{text, votes, imageUrl?}], totalVotes }
-  document.getElementById('res-slide-num').textContent = `Slide ${data.index ?? data.number ?? 1}`;
+  const slideWord = typeof t === 'function' ? t('slide') : 'Slide';
+  document.getElementById('res-slide-num').textContent = `${slideWord} ${data.index ?? data.number ?? 1}`;
   document.getElementById('results-question').textContent = data.question || '';
 
   const opts  = data.options || [];
@@ -1240,6 +1245,8 @@ function renderVoteResults(data) {
 
   const container = document.getElementById('results-options');
   container.innerHTML = '';
+
+  const votesWord = typeof t === 'function' ? t('votes').toLowerCase() : 'votes';
 
   opts.forEach((opt, i) => {
     const votes   = opt.votes   || 0;
@@ -1259,7 +1266,7 @@ function renderVoteResults(data) {
       </div>
       <div>
         <div class="result-pct ${isWinner ? 'grad-text-gold' : 'grad-text'}">${pct}%</div>
-        <div class="result-votes">${votes} vote${votes !== 1 ? 's' : ''}</div>
+        <div class="result-votes">${votes} ${votesWord}</div>
       </div>
     `;
     container.appendChild(row);
@@ -1352,7 +1359,16 @@ document.getElementById('entry-code').addEventListener('keydown', (e) => {
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    AUTO-JOIN FROM URL PARAM
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+window.addEventListener('languageChanged', () => {
+  if (typeof updatePageTranslations === 'function') updatePageTranslations();
+  const connDot = document.getElementById('conn-dot');
+  if (connDot && connDot.className) setConnState(connDot.className);
+});
+
 (function init() {
+  if (typeof renderLangSelector === 'function') {
+    renderLangSelector('displayLangSelector');
+  }
   const params = new URLSearchParams(window.location.search);
   const code   = params.get('code');
   if (code && code.trim().length >= 3) {

@@ -4,6 +4,11 @@ let currentLang = localStorage.getItem('presentit_lang') || 'en';
 
 let TRANSLATIONS = {};
 
+// Shorthand alias
+function t(key) {
+  return getTranslation(key);
+}
+
 // Load full i18n.json dynamically
 async function loadTranslations() {
   try {
@@ -96,6 +101,20 @@ function renderLangSelector(container) {
   `;
 }
 
+// Sync across tabs / windows
+window.addEventListener('storage', (e) => {
+  if (e.key === 'presentit_lang' && e.newValue && e.newValue !== currentLang) {
+    currentLang = e.newValue;
+    updatePageTranslations();
+    registeredContainers.forEach(containerEl => {
+      if (containerEl && document.body.contains(containerEl)) {
+        renderLangSelector(containerEl);
+      }
+    });
+    window.dispatchEvent(new CustomEvent('languageChanged', { detail: { lang: currentLang } }));
+  }
+});
+
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   updatePageTranslations();
@@ -103,3 +122,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Load JSON
 loadTranslations();
+

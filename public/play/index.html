@@ -745,7 +745,7 @@
     </div>
 
     <div class="mb-16">
-      <label for="name-input">Your Name</label>
+      <label for="name-input" data-i18n="your_name">Your Name</label>
       <input type="text" id="name-input" placeholder="e.g. Alex 🦄" data-i18n-placeholder="enter_name" maxlength="20" autocomplete="off" />
     </div>
 
@@ -837,9 +837,9 @@
 
       <div id="voted-confirmation" style="display:none;" class="voted-confirm">
         <span class="check">✅</span>
-        <h3>Voted!</h3>
+        <h3 data-i18n="voted">Voted!</h3>
         <div class="voted-option" id="voted-option-label">Option A</div>
-        <p>Your vote is locked in. Waiting for others...</p>
+        <p data-i18n="vote_locked_in">Your vote is locked in. Waiting for others...</p>
       </div>
 
       <div id="vote-live-count" class="text-center text-muted text-sm mt-16" style="display:none;">
@@ -864,7 +864,7 @@
     </div>
 
     <div id="results-next-btn-wrap" style="display:none; padding-top:12px;">
-      <button class="btn btn-green" onclick="presenterNext()">
+      <button class="btn btn-green" onclick="presenterNext()" data-i18n="next_slide">
         Next Slide →
       </button>
     </div>
@@ -874,7 +874,7 @@
   <!-- SCREEN: PREDEFINED – Presenter (Remote Control) -->
   <div id="screen-predefined-presenter" class="screen">
     <div class="text-center mb-16">
-      <div class="badge badge-presenter mb-12" style="display:inline-flex;">🎤 Presentation Remote</div>
+      <div class="badge badge-presenter mb-12" style="display:inline-flex;" data-i18n="presentation_remote">🎤 Presentation Remote</div>
     </div>
 
     <div class="scroll-inner">
@@ -882,11 +882,11 @@
     </div>
 
     <div style="padding-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <button class="btn btn-ghost" onclick="presenterPrev()" style="background:rgba(255,255,255,0.1);color:#ffffff;">
+      <button class="btn btn-ghost" onclick="presenterPrev()" style="background:rgba(255,255,255,0.1);color:#ffffff;" data-i18n="previous">
         ← Previous
       </button>
-      <button class="btn btn-green" onclick="presenterNext()">
-        Next →
+      <button class="btn btn-green" onclick="presenterNext()" data-i18n="next_slide">
+        Next Slide →
       </button>
     </div>
   </div>
@@ -897,11 +897,11 @@
   <div id="screen-predefined-audience" class="screen">
     <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
       <span class="listen-mic">🎤</span>
-      <h2 class="mb-8">Listen Up!</h2>
-      <p class="text-muted">The presenter is talking.<br>Sit back and pay attention!</p>
+      <h2 class="mb-8" data-i18n="listen_up">Listen Up!</h2>
+      <p class="text-muted" data-i18n="presenter_talking">The presenter is talking.<br>Sit back and pay attention!</p>
 
       <div class="card mt-20" style="width:100%; max-width:280px; background:rgba(102,126,234,0.08); border-color:rgba(102,126,234,0.3);">
-        <div class="text-sm text-muted">Now presenting</div>
+        <div class="text-sm text-muted" data-i18n="now_presenting">Now presenting</div>
         <div class="mt-8 font-bold" id="predefined-presenter-name" style="font-size:18px;">—</div>
       </div>
     </div>
@@ -1526,6 +1526,11 @@ function escHtml(str) {
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────
+window.addEventListener('languageChanged', () => {
+  if (typeof updatePageTranslations === 'function') updatePageTranslations();
+  if (state.currentSlide) handleSlide('slide_voting', state.currentSlide, state.slideIndex, state.totalSlides);
+});
+
 (function init() {
   if (typeof renderLangSelector === 'function') {
     renderLangSelector('playLangSelector');
