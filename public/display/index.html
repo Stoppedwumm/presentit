@@ -885,6 +885,45 @@
    UTILS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 const LETTERS = ['A','B','C','D','E','F','G','H'];
+let socket = null;
+let roomCode = '';
+let playerCount = 0;
+let presenterName = '';
+let currentSlide = null;
+
+function escHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function escAttr(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function renderLobby() {
+  document.getElementById('lobby-room-code').textContent = roomCode;
+  document.getElementById('lobby-player-count').textContent = playerCount;
+  const origin = window.location.origin;
+  document.getElementById('lobby-url-host').textContent = `${origin}/play`.replace(/^https?:\/\//,'');
+  generateQR(`${origin}/play?code=${roomCode}`);
+}
+
+function renderPredefinedSlide(slide) {
+  const slideNum = (slide.index !== undefined) ? slide.index + 1 : 1;
+  const slideWord = typeof t === 'function' ? t('slide') : 'Slide';
+  document.getElementById('pred-slide-num').textContent = `${slideWord} ${slideNum}`;
+  document.getElementById('predefined-text').textContent = slide.contentText || slide.text || slide.question || '';
+  showScreen('screen-predefined');
+}
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -1032,9 +1071,10 @@ function buildTextOption(opt, idx) {
   const card = document.createElement('div');
   card.className = 'option-card';
   card.style.animationDelay = `${idx * 0.08}s`;
+  const label = typeof opt === 'string' ? opt : (opt.caption || opt.text || opt.label || '');
   card.innerHTML = `
     <div class="option-letter">${LETTERS[idx]}</div>
-    <div class="option-text">${escHtml(opt.text || opt)}</div>
+    <div class="option-text">${escHtml(label)}</div>
   `;
   return card;
 }
@@ -1048,18 +1088,6 @@ function buildPhotoOption(opt, idx) {
   card.innerHTML = `
     <div class="option-letter">${LETTERS[idx]}</div>
     ${imgUrl ? `<div class="option-img-wrap"><img src="${escAttr(imgUrl)}" alt="Option ${LETTERS[idx]}" loading="lazy" /></div>` : ''}
-    <div class="option-text">${escHtml(label)}</div>
-  `;
-  return card;
-}
-
-function buildTextOption(opt, idx) {
-  const card = document.createElement('div');
-  card.className = 'option-card';
-  card.style.animationDelay = `${idx * 0.08}s`;
-  const label = typeof opt === 'string' ? opt : (opt.caption || opt.text || opt.label || '');
-  card.innerHTML = `
-    <div class="option-letter">${LETTERS[idx]}</div>
     <div class="option-text">${escHtml(label)}</div>
   `;
   return card;
@@ -1211,12 +1239,7 @@ function renderVotingSlide(slide) {
     container.appendChild(card);
   });
 
-  updateVoteBar(0, slide.votersTotal || 0);
-  showScreen('screen-voting');
-}
-
-  // Reset vote bar
-  updateVoteBar(0, slide.totalPlayers ?? playerCount);
+  updateVoteBar(0, slide.votersTotal || slide.totalPlayers || playerCount || 0);
   showScreen('screen-voting');
 }
 
