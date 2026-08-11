@@ -662,15 +662,15 @@
     <div id="presenterText" style="font-size:5vw;font-weight:900;color:#ffffff;line-height:1.3;max-width:90vw;white-space:pre-wrap;">—</div>
   </div>
 
-  <!-- Template Picker Modal -->
-  <div class="auth-overlay hidden" id="templatePickerModal" style="z-index:99999;">
-    <div class="auth-card glass" style="max-width:560px;width:90%;max-height:85vh;display:flex;flex-direction:column;">
+  <!-- Template Picker Modal (Centered Overlay) -->
+  <div id="templatePickerModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:99999;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
+    <div style="background:#0c0c24;border:1px solid rgba(255,255,255,0.15);box-shadow:0 24px 64px rgba(0,0,0,0.8);border-radius:20px;padding:28px;max-width:560px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-sizing:border-box;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <div style="font-size:18px;font-weight:800;">📑 Change Presentation Template</div>
+        <div style="font-size:18px;font-weight:800;color:#ffffff;">📑 Change Presentation Template</div>
         <button class="btn btn-ghost btn-sm" id="btnCloseTplModal">✕</button>
       </div>
       <div id="hostModalTplList" style="display:flex;flex-direction:column;gap:12px;overflow-y:auto;padding-right:4px;">
-        <!-- Dynamic templates -->
+        <!-- Loaded templates list -->
       </div>
     </div>
   </div>
@@ -730,7 +730,7 @@
     document.getElementById('btnChangeTemplate').addEventListener('click', async () => {
       const modal = document.getElementById('templatePickerModal');
       const container = document.getElementById('hostModalTplList');
-      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
       container.innerHTML = '<div style="padding:20px;text-align:center;">Loading templates…</div>';
       
       try {
@@ -754,7 +754,7 @@
           `;
           item.addEventListener('click', () => {
             socket.emit('host:change_template', { templateId: t.id });
-            modal.classList.add('hidden');
+            modal.style.display = 'none';
           });
           container.appendChild(item);
         });
@@ -764,7 +764,7 @@
     });
 
     document.getElementById('btnCloseTplModal').addEventListener('click', () => {
-      document.getElementById('templatePickerModal').classList.add('hidden');
+      document.getElementById('templatePickerModal').style.display = 'none';
     });
 
     socket.on('game:slide', (data) => {
