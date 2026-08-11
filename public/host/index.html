@@ -590,7 +590,7 @@
         </div>
 
         <div class="question-box" id="questionBox" style="display:none;">
-          <div class="question-label">Current Prompt</div>
+          <div class="question-label" data-i18n="current_prompt">Current Prompt</div>
           <div class="question-text" id="questionText">—</div>
         </div>
 
@@ -599,7 +599,7 @@
           <div id="hostOptionsWrap" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:16px;margin-bottom:24px;"></div>
           <div class="vote-progress-wrap">
             <div class="vote-progress-header">
-              <span>Votes received</span>
+              <span data-i18n="votes_received">Votes received</span>
               <span><span id="voteCount">0</span> / <span id="voterTotal">0</span></span>
             </div>
             <div class="progress-bar-track">
@@ -610,7 +610,7 @@
 
         <!-- Vote results -->
         <div id="voteResultsView" style="display:none;">
-          <div style="font-size:15px;font-weight:700;margin-bottom:14px;">📊 Vote Results</div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:14px;" data-i18n="vote_results_title">📊 Vote Results</div>
           <div class="vote-results-list" id="voteResultsList"></div>
         </div>
 
@@ -618,8 +618,8 @@
         <div id="ratingView" style="display:none;">
           <div class="rating-screen">
             <div class="rating-icon">⭐</div>
-            <div class="rating-title">Audience is Rating…</div>
-            <div class="rating-sub">Players are scoring the presenter's performance right now!</div>
+            <div class="rating-title" data-i18n="audience_rating_title">Audience is Rating…</div>
+            <div class="rating-sub" data-i18n="audience_rating_sub">Players are scoring the presenter's performance right now!</div>
           </div>
         </div>
 
@@ -627,25 +627,25 @@
         <div id="resultsView" style="display:none;">
           <div class="results-screen">
             <div class="results-trophy">🏆</div>
-            <div class="results-headline">Final Score for</div>
+            <div class="results-headline" data-i18n="final_score_for">Final Score for</div>
             <div class="results-presenter-name" id="resultsPresenterName">—</div>
             <div class="avg-score-wrap">
-              <div class="avg-score-label">Average Rating</div>
+              <div class="avg-score-label" data-i18n="average_rating">Average Rating</div>
               <div class="avg-score-number" id="avgScoreNumber">—</div>
-              <div class="avg-score-max">out of 10</div>
+              <div class="avg-score-max" data-i18n="out_of_10">out of 10</div>
               <div class="stars-display" id="starsDisplay"></div>
             </div>
             <div class="ratings-breakdown">
-              <div class="ratings-breakdown-title">Individual Ratings</div>
+              <div class="ratings-breakdown-title" data-i18n="individual_ratings">Individual Ratings</div>
               <div class="rating-chips" id="ratingChips"></div>
             </div>
             <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-              <button class="btn btn-hot btn-lg" id="btnRestartGame">
+              <button class="btn btn-hot btn-lg" id="btnRestartGame" data-i18n="play_again">
                 🔄 Play Again (Same Room & Players)
               </button>
               <a class="btn btn-primary" href="/">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-                Home
+                <span data-i18n="home">Home</span>
               </a>
             </div>
           </div>

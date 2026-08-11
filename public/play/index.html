@@ -771,26 +771,26 @@
         <span></span><span></span><span></span>
       </div>
 
-      <h2 class="mb-8" id="waiting-headline">Waiting for the game to start...</h2>
-      <p class="text-muted text-sm" id="waiting-subtitle">The host will kick things off shortly</p>
+      <h2 class="mb-8" id="waiting-headline" data-i18n="waiting_game_start">Waiting for the game to start...</h2>
+      <p class="text-muted text-sm" id="waiting-subtitle" data-i18n="host_kick_off">The host will kick things off shortly</p>
     </div>
 
     <div class="divider mt-24"></div>
 
     <div class="card mt-16 text-center">
-      <div class="text-muted text-sm mb-4">Room Code</div>
+      <div class="text-muted text-sm mb-4" data-i18n="room_code">Room Code</div>
       <div style="font-size:28px; font-weight:900; letter-spacing:0.2em;" id="waiting-code">----</div>
     </div>
 
     <div class="card mt-12 text-center">
-      <div class="text-muted text-sm mb-4">Players in room</div>
+      <div class="text-muted text-sm mb-4" data-i18n="players_in_room">Players in room</div>
       <div style="font-size:32px; font-weight:900;" id="waiting-count">0</div>
     </div>
 
     <div id="presenter-tip" class="card mt-12 text-center" style="display:none; background:rgba(245,87,108,0.08); border-color:rgba(245,87,108,0.25);">
       <div style="font-size:28px; margin-bottom:8px;">🎤</div>
-      <div style="font-weight:700; color:#f5576c;">You are the Presenter!</div>
-      <div class="text-muted text-sm mt-8">Get ready to yap about your slides</div>
+      <div style="font-weight:700; color:#f5576c;" data-i18n="you_are_presenter">You are the Presenter!</div>
+      <div class="text-muted text-sm mt-8" data-i18n="get_ready_yap">Get ready to yap about your slides</div>
     </div>
   </div>
 
@@ -800,11 +800,11 @@
   <div id="screen-look-away" class="screen">
     <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 20px;">
       <span class="look-away-icon">👀</span>
-      <h1 style="font-size:36px; font-weight:900; background:var(--grad-orange); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:8px;">LOOK AWAY!</h1>
-      <p class="text-muted mt-8">Audience is voting — no peeking!</p>
+      <h1 style="font-size:36px; font-weight:900; background:var(--grad-orange); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:8px;" data-i18n="look_away">LOOK AWAY!</h1>
+      <p class="text-muted mt-8" data-i18n="audience_voting_no_peeking">Audience is voting — no peeking!</p>
 
       <div class="card mt-24" style="width:100%; max-width:300px;">
-        <div class="text-sm text-muted mb-8">Votes received</div>
+        <div class="text-sm text-muted mb-8" data-i18n="votes_received">Votes received</div>
         <div style="font-size:28px; font-weight:900;" id="look-vote-count">0 / ?</div>
         <div class="vote-progress-bar mt-8">
           <div class="vote-progress-fill" id="look-vote-bar" style="width:0%"></div>
@@ -813,9 +813,9 @@
     </div>
 
     <div style="padding:0 0 20px;">
-      <div class="text-center text-muted text-sm mb-8">⚠️ Only press when ready to reveal</div>
+      <div class="text-center text-muted text-sm mb-8" data-i18n="only_press_reveal">⚠️ Only press when ready to reveal</div>
       <button class="btn btn-danger-ghost" id="look-away-next-btn" onclick="presenterNext()">
-        🔒 Close Voting &amp; Show Results
+        <span data-i18n="close_voting">🔒 Close Voting &amp; Show Results</span>
       </button>
     </div>
   </div>
