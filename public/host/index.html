@@ -513,6 +513,15 @@
         </div>
       </div>
 
+      <!-- Active Presentation Banner -->
+      <div class="card" style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Active Presentation Template</div>
+          <div style="font-size:20px;font-weight:800;color:var(--text);margin-top:4px;" id="activeTemplateName">Loading template…</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btnChangeTemplate">📑 Change Presentation</button>
+      </div>
+
       <div class="lobby-grid">
 
         <!-- QR Code -->
@@ -653,6 +662,19 @@
     <div id="presenterText" style="font-size:5vw;font-weight:900;color:#ffffff;line-height:1.3;max-width:90vw;white-space:pre-wrap;">—</div>
   </div>
 
+  <!-- Template Picker Modal -->
+  <div class="auth-overlay hidden" id="templatePickerModal" style="z-index:99999;">
+    <div class="auth-card glass" style="max-width:560px;width:90%;max-height:85vh;display:flex;flex-direction:column;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div style="font-size:18px;font-weight:800;">📑 Change Presentation Template</div>
+        <button class="btn btn-ghost btn-sm" id="btnCloseTplModal">✕</button>
+      </div>
+      <div id="hostModalTplList" style="display:flex;flex-direction:column;gap:12px;overflow-y:auto;padding-right:4px;">
+        <!-- Dynamic templates -->
+      </div>
+    </div>
+  </div>
+
   <script>
   (() => {
     'use strict';
@@ -692,7 +714,57 @@
         state.presenter = data.presenter;
         renderPresenter();
       }
+      if (data.templateName) {
+        document.getElementById('activeTemplateName').textContent = data.templateName;
+      }
       updateStartButton();
+    });
+
+    socket.on('room:template_changed', (data) => {
+      if (data.templateName) {
+        document.getElementById('activeTemplateName').textContent = data.templateName;
+        toast(`Presentation template changed to "${data.templateName}"!`, 'info');
+      }
+    });
+
+    document.getElementById('btnChangeTemplate').addEventListener('click', async () => {
+      const modal = document.getElementById('templatePickerModal');
+      const container = document.getElementById('hostModalTplList');
+      modal.classList.remove('hidden');
+      container.innerHTML = '<div style="padding:20px;text-align:center;">Loading templates…</div>';
+      
+      try {
+        const res = await fetch('/api/templates');
+        const templates = await res.json();
+        container.innerHTML = '';
+        if (!templates.length) {
+          container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);">No templates available.</div>';
+          return;
+        }
+        templates.forEach(t => {
+          const item = document.createElement('div');
+          item.style.cssText = 'padding:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background 0.2s;';
+          const slideCount = t.slides ? t.slides.length : 0;
+          item.innerHTML = `
+            <div>
+              <div style="font-weight:700;font-size:15px;color:var(--text);">${escHtml(t.name)}</div>
+              <div style="font-size:12px;color:var(--muted);">${escHtml(t.description || 'No description')} · 📊 ${slideCount} slide${slideCount !== 1 ? 's' : ''}</div>
+            </div>
+            <button class="btn btn-primary btn-sm">Select</button>
+          `;
+          item.addEventListener('click', () => {
+            socket.emit('host:change_template', { templateId: t.id });
+            modal.classList.add('hidden');
+          });
+          container.appendChild(item);
+        });
+      } catch (err) {
+        container.innerHTML = `<div style="color:var(--danger);padding:20px;">Error: ${escHtml(err.message)}</div>`;
+      }
+    });
+
+    document.getElementById('btnCloseTplModal').addEventListener('click', () => {
+      document.getElementById('templatePickerModal').classList.add('hidden');
     });
 
     socket.on('game:slide', (data) => {

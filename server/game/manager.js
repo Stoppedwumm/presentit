@@ -74,6 +74,23 @@ class GameManager {
       this.emitRoomUpdate(room);
     });
 
+    socket.on('host:change_template', ({ templateId }) => {
+      const room = this.findRoomBySocket(socket.id);
+      if (!room || room.status !== 'LOBBY') return;
+
+      const newTemplate = getTemplate(templateId);
+      if (!newTemplate) return socket.emit('error', { message: 'Template not found' });
+
+      room.template = newTemplate;
+      room.votableSlides = newTemplate.slides.filter(s => s.slide_type !== 'predefined');
+
+      this.emitRoomUpdate(room);
+      this.io.to(room.code).emit('room:template_changed', {
+        templateName: newTemplate.name,
+        slideCount: newTemplate.slides.length
+      });
+    });
+
     socket.on('host:start_game', () => {
       const room = this.findRoomBySocket(socket.id);
       if (!room) return;
@@ -554,7 +571,9 @@ class GameManager {
     this.io.to(room.code).emit('room:update', {
       players: room.players,
       presenter: presenter ? { id: presenter.id, name: presenter.name } : null,
-      status: room.status
+      status: room.status,
+      templateName: room.template ? room.template.name : '',
+      templateId: room.template ? room.template.id : ''
     });
   }
 }
