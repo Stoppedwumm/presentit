@@ -411,17 +411,31 @@
         templates.forEach(t => {
           if (t.slides) {
             t.slides.forEach(s => {
-              const url = s.imageUrl || s.image_url;
-              if (url) dbImages.push(url);
+              if (s.imageUrl || s.image_url) {
+                dbImages.push(s.imageUrl || s.image_url);
+              }
+              let opts = s.options || s.options_json;
+              if (typeof opts === 'string') {
+                try { opts = JSON.parse(opts); } catch(e){}
+              }
+              if (Array.isArray(opts)) {
+                opts.forEach(o => {
+                  if (o && typeof o === 'object') {
+                    const u = o.imageUrl || o.image_url;
+                    if (u) dbImages.push(u);
+                  }
+                });
+              }
             });
           }
         });
+        dbImages = Array.from(new Set(dbImages));
       } catch (err) {
         console.log('Particles DB fetch fallback:', err);
       }
 
-      const totalParticles = 22;
-      const sizes = [70, 90, 110, 80, 100, 65, 85, 95, 75, 105, 60, 120, 80, 90, 100, 70, 85, 95, 110, 65, 100];
+      const totalParticles = 24;
+      const sizes = [70, 90, 110, 80, 100, 65, 85, 95, 75, 105, 60, 120, 80, 90, 100, 70, 85, 95, 110, 65, 100, 80, 90, 105];
 
       for (let i = 0; i < totalParticles; i++) {
         const el = document.createElement('div');
@@ -431,8 +445,8 @@
         const dur = 14 + Math.random() * 16;
         const delay = Math.random() * -20;
 
-        // Alternate between DB images (if available) and emojis
-        const imgUrl = (dbImages.length > 0 && i % 2 === 0) ? dbImages[(i / 2) % dbImages.length] : null;
+        // Display images on even indices if DB images exist
+        const imgUrl = (dbImages.length > 0 && i % 2 === 0) ? dbImages[Math.floor(i / 2) % dbImages.length] : null;
 
         if (imgUrl) {
           el.style.cssText = `
