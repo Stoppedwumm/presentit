@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="/i18n.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -188,6 +189,7 @@
     <header>
       <a class="logo" href="/">PresentIt Admin</a>
       <div class="nav-links">
+        <div id="adminLangSelector"></div>
         <a class="btn btn-ghost" href="/host">Host Room</a>
         <button class="btn btn-danger btn-sm" id="btnLogout">Lock Admin</button>
       </div>
@@ -197,10 +199,10 @@
     <div id="viewList">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
         <div>
-          <h1 style="font-size:26px;font-weight:900;">Presentation Templates</h1>
+          <h1 style="font-size:26px;font-weight:900;" data-i18n="admin_title">Presentation Templates</h1>
           <p style="color:var(--muted);font-size:14px;">Build deck templates for audience voting & presenter yapping.</p>
         </div>
-        <button class="btn btn-primary" id="btnNewTemplate">+ Create Template</button>
+        <button class="btn btn-primary" id="btnNewTemplate" data-i18n="create_template">+ Create Template</button>
       </div>
 
       <div class="template-list" id="templateList"></div>
@@ -243,6 +245,10 @@
 
     const authModal = document.getElementById('authModal');
     const mainApp = document.getElementById('mainApp');
+
+    if (typeof renderLangSelector === 'function') {
+      renderLangSelector('adminLangSelector');
+    }
 
     if (adminToken) {
       authModal.classList.add('hidden');

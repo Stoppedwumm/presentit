@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="/i18n.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -467,13 +468,14 @@
     <header class="header">
       <a class="logo" href="/">PresentIt</a>
       <div class="header-right">
+        <div id="hostLangSelector"></div>
         <div class="state-label" id="stateLabel">
           <span class="state-dot dot-waiting" id="stateDot"></span>
           <span id="stateLabelText">Setup</span>
         </div>
         <a class="back-link" href="/">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          Back
+          <span data-i18n="back">Back</span>
         </a>
       </div>
     </header>
@@ -1273,6 +1275,9 @@
     });
 
     // ── Init ──────────────────────────────────────────────────────────
+    if (typeof renderLangSelector === 'function') {
+      renderLangSelector('hostLangSelector');
+    }
     loadTemplates();
 
   })();

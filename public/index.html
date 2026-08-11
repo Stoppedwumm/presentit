@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="/i18n.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -347,21 +348,23 @@
   <div class="card-particles" id="cardParticles"></div>
 
   <div class="page">
+    <div style="position:absolute;top:20px;right:20px;z-index:100;" id="langSelector"></div>
+
     <div class="hero-card">
 
       <div class="badge">🎮 Live Presentation Game</div>
 
       <h1>PresentIt</h1>
-      <p class="tagline">Where presentations get <span>wild</span></p>
+      <p class="tagline" data-i18n="tagline">Where presentations get wild</p>
 
       <div class="cta-group">
         <a class="btn btn-host" href="/host">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-          Host a Game
+          <span data-i18n="host_game">Host a Game</span>
         </a>
         <a class="btn btn-join" href="/play">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-          Join a Game
+          <span data-i18n="join_game">Join a Game</span>
         </a>
       </div>
 
@@ -370,19 +373,19 @@
       <div class="features">
         <div class="feature">
           <div class="feature-icon fi-1">🎨</div>
-          <div>
+          <div data-i18n="build_template_desc">
             <strong>Build a template</strong> — craft the perfect slide deck with custom prompts for your audience to fill in
           </div>
         </div>
         <div class="feature">
           <div class="feature-icon fi-2">🗳️</div>
-          <div>
+          <div data-i18n="play_vote_desc">
             <strong>Play &amp; vote</strong> — the audience sees surprise slides, rates answers, and chaos ensues
           </div>
         </div>
         <div class="feature">
           <div class="feature-icon fi-3">⭐</div>
-          <div>
+          <div data-i18n="rate_presenter_desc">
             <strong>Rate the presenter</strong> — after the show, everyone scores how well they sold the madness
           </div>
         </div>
@@ -390,7 +393,7 @@
 
       <a class="admin-link" href="/admin">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-        Admin (Template Builder)
+        <span data-i18n="admin_title">Admin (Template Builder)</span>
       </a>
 
     </div>
@@ -477,6 +480,11 @@
         container.appendChild(el);
       }
     })();
+
+    // ── Render Language Selector ──────────────────────────────
+    if (typeof renderLangSelector === 'function') {
+      renderLangSelector('langSelector');
+    }
 
     // ── Subtle mouse parallax on hero card ──────────────────────────
     const card = document.querySelector('.hero-card');

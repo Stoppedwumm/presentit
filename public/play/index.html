@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="/i18n.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -718,6 +719,8 @@
 </head>
 <body>
 
+<div id="playLangSelector" style="position:fixed;top:12px;right:12px;z-index:999;"></div>
+
 <!-- BG ORBS -->
 <div class="bg-orb bg-orb-1"></div>
 <div class="bg-orb bg-orb-2"></div>
@@ -733,35 +736,21 @@
       <span class="logo-text">PresentIt</span>
     </div>
 
-    <h1 class="mb-8">Join a Game</h1>
+    <h1 class="mb-8" data-i18n="join_game">Join a Game</h1>
     <p class="text-muted text-sm mb-20">Enter the room code shown on screen</p>
 
     <div class="mb-16">
-      <label for="code-input">Room Code</label>
-      <input type="text" id="code-input" placeholder="ABCD" maxlength="4" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" inputmode="text" />
+      <label for="code-input" data-i18n="room_code">Room Code</label>
+      <input type="text" id="code-input" placeholder="ABCD" data-i18n-placeholder="enter_code" maxlength="4" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" inputmode="text" />
     </div>
 
     <div class="mb-16">
       <label for="name-input">Your Name</label>
-      <input type="text" id="name-input" placeholder="e.g. Alex 🦄" maxlength="20" autocomplete="off" />
-    </div>
-
-    <div class="mb-16">
-      <label>Join As</label>
-      <div class="role-grid">
-        <button class="role-btn" id="role-presenter" onclick="selectRole('presenter')">
-          <span class="role-icon">🎤</span>
-          <span>Presenter</span>
-        </button>
-        <button class="role-btn" id="role-audience" onclick="selectRole('audience')">
-          <span class="role-icon">👥</span>
-          <span>Audience</span>
-        </button>
-      </div>
+      <input type="text" id="name-input" placeholder="e.g. Alex 🦄" data-i18n-placeholder="enter_name" maxlength="20" autocomplete="off" />
     </div>
 
     <button class="btn btn-primary" id="join-btn" onclick="joinRoom()">
-      <span>Join Game</span>
+      <span data-i18n="join_button">Join Game</span>
       <span>→</span>
     </button>
   </div>
@@ -1538,6 +1527,10 @@ function escHtml(str) {
 
 // ─── INIT ─────────────────────────────────────────────────────────────────
 (function init() {
+  if (typeof renderLangSelector === 'function') {
+    renderLangSelector('playLangSelector');
+  }
+
   const savedCode = localStorage.getItem('pi_code');
   const savedName = localStorage.getItem('pi_name');
   const savedId   = localStorage.getItem('pi_player_id');
