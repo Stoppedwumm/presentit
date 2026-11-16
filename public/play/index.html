@@ -1081,6 +1081,22 @@ function initSocket() {
   const socket = io({ transports: ['websocket', 'polling'] });
   state.socket = socket;
 
+  function returnToJoin(message) {
+    socket.disconnect();
+    state.socket = null;
+    state.code = '';
+    state.currentSlide = null;
+    state.myVote = null;
+    state.myRating = null;
+    state.hasRated = false;
+    localStorage.removeItem('pi_code');
+    const url = new URL(window.location.href);
+    url.searchParams.delete('code');
+    history.replaceState(null, '', url);
+    showScreen('screen-join');
+    showToast(message);
+  }
+
   socket.on('connect', () => {
     socket.emit('play:join_room', {
       roomCode: state.code,
@@ -1228,7 +1244,16 @@ function initSocket() {
   });
 
   // ── error ──
+  socket.on('room:closed', () => {
+    returnToJoin(t('host_closed_room'));
+    codeInput.value = '';
+  });
+
   socket.on('error', (data) => {
+    if (data.code === 'ROOM_NOT_FOUND') {
+      returnToJoin(data.message);
+      return;
+    }
     showToast(data.message || 'Something went wrong');
   });
 }
