@@ -1102,6 +1102,17 @@ function connectSocket(code) {
 
   socket = io({ transports: ['websocket','polling'] });
 
+  function returnToEntry(message) {
+    socket.disconnect();
+    socket = null;
+    roomCode = '';
+    const url = new URL(window.location.href);
+    url.searchParams.delete('code');
+    history.replaceState(null, '', url);
+    document.getElementById('entry-error').textContent = message;
+    showScreen('screen-entry');
+  }
+
   socket.on('connect', () => {
     setConnState('connected');
     socket.emit('display:join_room', { roomCode });
@@ -1109,6 +1120,14 @@ function connectSocket(code) {
 
   socket.on('disconnect', () => setConnState('disconnected'));
   socket.on('connect_error', () => setConnState('disconnected'));
+
+  socket.on('room:closed', () => {
+    returnToEntry(t('host_closed_room'));
+  });
+
+  socket.on('error', (data) => {
+    if (data.code === 'ROOM_NOT_FOUND') returnToEntry(data.message);
+  });
 
   socket.on('display:joined', (data) => {
     if (data && data.players) playerCount = data.players.length;

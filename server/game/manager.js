@@ -66,6 +66,11 @@ class GameManager {
       }
     });
 
+    socket.on('host:leave_room', (ack) => {
+      this.closeHostedRooms(socket.id);
+      if (typeof ack === 'function') ack();
+    });
+
     socket.on('host:select_presenter', ({ playerId }) => {
       const room = this.findRoomBySocket(socket.id);
       if (!room || room.status !== 'LOBBY') return;
@@ -162,7 +167,7 @@ class GameManager {
     socket.on('display:join_room', ({ roomCode }) => {
       const room = this.getRoom(roomCode);
       if (!room) {
-        return socket.emit('error', { message: 'Invalid room code' });
+        return socket.emit('error', { code: 'ROOM_NOT_FOUND', message: 'Invalid room code' });
       }
       room.displaySocketId = socket.id;
       socket.join(room.code);
@@ -176,7 +181,7 @@ class GameManager {
     socket.on('play:join_room', ({ roomCode, name, playerId }) => {
       const room = this.getRoom(roomCode);
       if (!room) {
-        return socket.emit('error', { message: 'Room not found. Check code.' });
+        return socket.emit('error', { code: 'ROOM_NOT_FOUND', message: 'Room not found. Check code.' });
       }
 
       // Check if player is rejoining via playerId or socket.id or name
@@ -306,6 +311,8 @@ class GameManager {
     });
 
     socket.on('disconnect', () => {
+      this.closeHostedRooms(socket.id);
+
       const room = this.findRoomBySocket(socket.id);
       if (!room) return;
 
@@ -320,6 +327,20 @@ class GameManager {
       this.scheduleLobbyRemoval(room, player);
       this.emitRoomUpdate(room);
     });
+  }
+
+  closeHostedRooms(socketId) {
+    for (const room of this.rooms.values()) {
+      if (room.hostSocketId !== socketId) continue;
+
+      this.rooms.delete(room.code);
+      for (const player of room.players) {
+        clearTimeout(player.removeTimer);
+      }
+      const sockets = this.io.to(room.code);
+      sockets.emit('room:closed');
+      sockets.socketsLeave(room.code);
+    }
   }
 
   startVotingPhase(room) {
@@ -400,6 +421,8 @@ class GameManager {
 
     // Short pause then next vote slide or start presentation
     setTimeout(() => {
+      if (this.getRoom(room.code) !== room) return;
+
       if (room.currentVoteSlideIdx < room.votableSlides.length - 1) {
         room.currentVoteSlideIdx++;
         this.sendCurrentVoteSlide(room);
