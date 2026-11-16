@@ -1105,7 +1105,10 @@ function initSocket() {
     localStorage.setItem('pi_name', state.name);
 
     updateWaitingScreen(code, 1, '', gameState);
-    showScreen('screen-waiting');
+    // Mid-game rejoins get sent the current phase right after this event
+    if (!gameState || gameState === 'LOBBY') {
+      showScreen('screen-waiting');
+    }
   });
 
   // ── room update ──
@@ -1197,7 +1200,15 @@ function initSocket() {
 
   // ── vote:confirmed ──
   socket.on('vote:confirmed', (data) => {
-    showVotedConfirmation(state.myVote);
+    const options = state.currentSlide?.options || [];
+    if (state.myVote === null && data) {
+      // Restoring a vote after rejoining: find which option it was
+      const choice = data.choice || data.text;
+      const idx = options.findIndex(o =>
+        o === choice || (o && (o.caption === choice || o.text === choice || o.id === choice)));
+      state.myVote = idx >= 0 ? idx : 0;
+    }
+    showVotedConfirmation(state.myVote, options[state.myVote], options);
   });
 
   // ── rating:confirmed ──

@@ -1,5 +1,8 @@
 const { getTemplate } = require('../db');
 
+// How long a player who disconnects from the lobby keeps their spot
+const LOBBY_REJOIN_GRACE_MS = 60 * 1000;
+
 class GameManager {
   constructor(io) {
     this.io = io;
@@ -30,14 +33,14 @@ class GameManager {
       template,
       hostSocketId,
       displaySocketId: null,
-      players: [], // { id, socketId, name, role: 'presenter' | 'audience' }
+      players: [], // { id, socketId, name, role: 'presenter' | 'audience', connected }
       status: 'LOBBY',
       votableSlides: [],
       currentVoteSlideIdx: 0,
       slideWinners: {}, // slideIdx -> winning choice/text
-      votes: {}, // slideIdx -> { socketId -> choice }
+      votes: {}, // slideIdx -> { playerId -> choice }
       presenterSlideIdx: 0,
-      ratings: [], // { socketId, voterName, score }
+      ratings: [], // { playerId, voterName, score }
     };
 
     // Filter votable slides
@@ -102,7 +105,9 @@ class GameManager {
       // Assign random presenter if none selected
       let presenter = room.players.find(p => p.role === 'presenter');
       if (!presenter && room.players.length > 0) {
-        presenter = room.players[Math.floor(Math.random() * room.players.length)];
+        const candidates = room.players.filter(p => p.connected !== false);
+        const pool = candidates.length > 0 ? candidates : room.players;
+        presenter = pool[Math.floor(Math.random() * pool.length)];
         presenter.role = 'presenter';
         room.players.forEach(p => {
           if (p.id !== presenter.id) p.role = 'audience';
@@ -128,9 +133,12 @@ class GameManager {
       room.presenterSlideIdx = 0;
       room.ratings = [];
 
+      // Players who disconnected mid-game get the usual lobby grace period
+      room.players.filter(p => !p.connected).forEach(p => this.scheduleLobbyRemoval(room, p));
+
       this.io.to(room.code).emit('game:reset', {
         code: room.code,
-        players: room.players,
+        players: room.players.map(p => this.serializePlayer(p)),
         status: 'LOBBY'
       });
 
@@ -158,7 +166,10 @@ class GameManager {
       }
       room.displaySocketId = socket.id;
       socket.join(room.code);
-      socket.emit('display:joined', { code: room.code, status: room.status, players: room.players });
+      socket.emit('display:joined', { code: room.code, status: room.status, players: room.players.map(p => this.serializePlayer(p)) });
+
+      // If game already in progress, bring the display back to the current phase
+      this.syncSocketToPhase(socket, room, null);
     });
 
     // ── PLAYER (MOBILE) EVENTS ──
@@ -178,6 +189,11 @@ class GameManager {
       if (player) {
         // Re-bind socket and update name
         player.socketId = socket.id;
+        player.connected = true;
+        if (player.removeTimer) {
+          clearTimeout(player.removeTimer);
+          player.removeTimer = null;
+        }
         if (name) player.name = name;
       } else {
         // Create new player
@@ -185,7 +201,9 @@ class GameManager {
           id: playerId || `p_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
           socketId: socket.id,
           name: name || `Player ${room.players.length + 1}`,
-          role: 'audience'
+          role: 'audience',
+          connected: true,
+          removeTimer: null
         };
         room.players.push(player);
       }
@@ -193,35 +211,32 @@ class GameManager {
       socket.join(room.code);
       socket.emit('play:joined', {
         code: room.code,
-        player,
+        player: this.serializePlayer(player),
         status: room.status
       });
 
       this.emitRoomUpdate(room);
 
-      // If game already in progress, sync player state
-      if (room.status === 'VOTING') {
-        this.syncPlayerVotingState(socket, room);
-      } else if (room.status === 'PRESENTING') {
-        this.syncPlayerPresentingState(socket, room);
-      } else if (room.status === 'RATING') {
-        socket.emit('game:rating', { presenterName: this.getPresenterName(room) });
-      }
+      // If game already in progress, bring the player back to the current phase
+      this.syncSocketToPhase(socket, room, player);
     });
 
     socket.on('vote:submit', ({ choice, text }) => {
       const room = this.findRoomBySocket(socket.id);
       if (!room || room.status !== 'VOTING') return;
 
+      const player = room.players.find(p => p.socketId === socket.id);
+      if (!player) return;
+
       const slideIdx = room.currentVoteSlideIdx;
       if (!room.votes[slideIdx]) {
         room.votes[slideIdx] = {};
       }
 
-      room.votes[slideIdx][socket.id] = { choice, text };
+      room.votes[slideIdx][player.id] = { choice, text };
 
       // Update progress to host & display
-      const audienceCount = room.players.filter(p => p.role !== 'presenter').length;
+      const audienceCount = this.getAudienceCount(room);
       const votesIn = Object.keys(room.votes[slideIdx]).length;
 
       this.io.to(room.code).emit('game:vote_progress', {
@@ -269,14 +284,14 @@ class GameManager {
       const player = room.players.find(p => p.socketId === socket.id);
       if (!player || player.role === 'presenter') return; // Presenter doesn't rate themselves
 
-      const existingIdx = room.ratings.findIndex(r => r.socketId === socket.id);
+      const existingIdx = room.ratings.findIndex(r => r.playerId === player.id);
       const val = Math.min(10, Math.max(1, parseInt(score, 10) || 5));
 
       if (existingIdx >= 0) {
         room.ratings[existingIdx].score = val;
       } else {
         room.ratings.push({
-          socketId: socket.id,
+          playerId: player.id,
           voterName: player.name,
           score: val
         });
@@ -284,7 +299,7 @@ class GameManager {
 
       socket.emit('rating:confirmed', { score: val });
 
-      const audienceCount = room.players.filter(p => p.role !== 'presenter').length;
+      const audienceCount = this.getAudienceCount(room);
       if (room.ratings.length >= audienceCount && audienceCount > 0) {
         this.finishRatingPhase(room);
       }
@@ -292,10 +307,18 @@ class GameManager {
 
     socket.on('disconnect', () => {
       const room = this.findRoomBySocket(socket.id);
-      if (room) {
-        room.players = room.players.filter(p => p.socketId !== socket.id);
-        this.emitRoomUpdate(room);
-      }
+      if (!room) return;
+
+      const player = room.players.find(p => p.socketId === socket.id);
+      if (!player) return;
+
+      // Keep the player (and their role) around so they can rejoin where they
+      // left off, e.g. after switching apps on mobile or reloading the page.
+      player.connected = false;
+      player.socketId = null;
+
+      this.scheduleLobbyRemoval(room, player);
+      this.emitRoomUpdate(room);
     });
   }
 
@@ -312,7 +335,7 @@ class GameManager {
       return;
     }
 
-    const audienceCount = room.players.filter(p => p.role !== 'presenter').length;
+    const audienceCount = this.getAudienceCount(room);
 
     const payload = {
       type: 'vote',
@@ -491,18 +514,22 @@ class GameManager {
     return deck;
   }
 
-  emitCurrentPresenterSlide(room) {
+  buildPresenterSlidePayload(room) {
     const finalDeck = this.buildFinalDeck(room);
     const currentSlide = finalDeck[room.presenterSlideIdx] || {};
 
     const presenter = room.players.find(p => p.role === 'presenter');
 
-    this.io.to(room.code).emit('game:presenter_slide', {
+    return {
       slide: currentSlide,
       index: room.presenterSlideIdx,
       total: finalDeck.length,
       presenterName: presenter ? presenter.name : 'Presenter'
-    });
+    };
+  }
+
+  emitCurrentPresenterSlide(room) {
+    this.io.to(room.code).emit('game:presenter_slide', this.buildPresenterSlidePayload(room));
   }
 
   startRatingPhase(room) {
@@ -513,21 +540,50 @@ class GameManager {
 
   finishRatingPhase(room) {
     room.status = 'FINISHED';
+    this.io.to(room.code).emit('game:results', this.buildResultsPayload(room));
+  }
 
+  buildResultsPayload(room) {
     let totalScore = 0;
     room.ratings.forEach(r => totalScore += r.score);
     const avg = room.ratings.length > 0 ? (totalScore / room.ratings.length).toFixed(1) : '10.0';
 
-    this.io.to(room.code).emit('game:results', {
+    return {
       presenterName: this.getPresenterName(room),
       average: avg,
       ratings: room.ratings
-    });
+    };
   }
 
-  syncPlayerVotingState(socket, room) {
+  // Re-send the current phase to a (re)connecting player or display socket.
+  // `player` is null for the display.
+  syncSocketToPhase(socket, room, player) {
+    if (room.status === 'VOTING') {
+      this.syncVotingState(socket, room, player);
+    } else if (room.status === 'PRESENTING') {
+      if (player && player.role === 'presenter') {
+        socket.emit('game:presenter_remote', {
+          slides: this.buildFinalDeck(room)
+        });
+      }
+      socket.emit('game:presenter_slide', this.buildPresenterSlidePayload(room));
+    } else if (room.status === 'RATING') {
+      socket.emit('game:rating', { presenterName: this.getPresenterName(room) });
+      const rating = player && room.ratings.find(r => r.playerId === player.id);
+      if (rating) {
+        socket.emit('rating:confirmed', { score: rating.score });
+      }
+    } else if (room.status === 'FINISHED') {
+      socket.emit('game:results', this.buildResultsPayload(room));
+    }
+  }
+
+  syncVotingState(socket, room, player) {
     const slide = room.votableSlides[room.currentVoteSlideIdx];
     if (!slide) return;
+
+    const audienceCount = this.getAudienceCount(room);
+    const votes = room.votes[room.currentVoteSlideIdx] || {};
 
     socket.emit('game:slide', {
       type: 'vote',
@@ -537,17 +593,40 @@ class GameManager {
       imageUrl: slide.image_url,
       contentText: slide.content_text,
       index: room.currentVoteSlideIdx,
-      total: room.votableSlides.length
+      total: room.votableSlides.length,
+      votersTotal: audienceCount
     });
+
+    socket.emit('game:vote_progress', {
+      votesIn: Object.keys(votes).length,
+      votersTotal: audienceCount
+    });
+
+    const myVote = player && votes[player.id];
+    if (myVote) {
+      socket.emit('vote:confirmed', myVote);
+    }
   }
 
-  syncPlayerPresentingState(socket, room) {
-    const player = room.players.find(p => p.socketId === socket.id);
-    if (player && player.role === 'presenter') {
-      socket.emit('game:presenter_remote', {
-        slides: this.buildFinalDeck(room)
-      });
-    }
+  // Players that leave the lobby for good get dropped after a grace period.
+  // Once a game is running we keep them so the round can't softlock.
+  scheduleLobbyRemoval(room, player) {
+    if (player.removeTimer) clearTimeout(player.removeTimer);
+    player.removeTimer = setTimeout(() => {
+      player.removeTimer = null;
+      if (!player.connected && room.status === 'LOBBY') {
+        room.players = room.players.filter(p => p !== player);
+        this.emitRoomUpdate(room);
+      }
+    }, LOBBY_REJOIN_GRACE_MS);
+  }
+
+  getAudienceCount(room) {
+    return room.players.filter(p => p.role !== 'presenter' && p.connected !== false).length;
+  }
+
+  serializePlayer(p) {
+    return { id: p.id, socketId: p.socketId, name: p.name, role: p.role, connected: p.connected !== false };
   }
 
   getPresenterName(room) {
@@ -559,7 +638,7 @@ class GameManager {
     for (const room of this.rooms.values()) {
       if (room.hostSocketId === socketId ||
           room.displaySocketId === socketId ||
-          room.players.some(p => p.socketId === socketId)) {
+          room.players.some(p => p.socketId && p.socketId === socketId)) {
         return room;
       }
     }
@@ -569,7 +648,7 @@ class GameManager {
   emitRoomUpdate(room) {
     const presenter = room.players.find(p => p.role === 'presenter');
     this.io.to(room.code).emit('room:update', {
-      players: room.players,
+      players: room.players.map(p => this.serializePlayer(p)),
       presenter: presenter ? { id: presenter.id, name: presenter.name } : null,
       status: room.status,
       templateName: room.template ? room.template.name : '',
